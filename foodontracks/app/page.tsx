@@ -24,8 +24,8 @@ export default function Home() {
 
       <div style={{ marginTop: 16, color: "#666" }}>
         <small>
-          Page is a client component ("use client"). For larger pages, convert only interactive parts to
-          client components.
+          Page is a client component (&quot;use client&quot;). For larger pages,
+          convert only interactive parts to client components.
         </small>
       </div>
     </div>
