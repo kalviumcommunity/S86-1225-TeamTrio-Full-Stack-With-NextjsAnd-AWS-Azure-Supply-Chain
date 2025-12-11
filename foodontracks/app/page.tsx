@@ -22,12 +22,7 @@ export default function Home() {
         <Button onClick={handleClick}>Click Me</Button>
       </div>
 
-      <div style={{ marginTop: 16, color: "#666" }}>
-        <small>
-          Page is a client component ("use client"). For larger pages, convert only interactive parts to
-          client components.
-        </small>
-      </div>
+      <div style={{ marginTop: 16, color: "#666" }}></div>
     </div>
   );
 }
