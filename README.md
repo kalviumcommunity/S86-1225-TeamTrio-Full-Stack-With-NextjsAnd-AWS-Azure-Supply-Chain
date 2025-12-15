@@ -631,3 +631,275 @@ deploy:
 
 ---
 
+## 🗄️ Database Design & PostgreSQL Setup
+
+### Overview
+
+FoodONtracks uses a **normalized PostgreSQL database** managed with **Prisma ORM**. The database schema follows **3NF (Third Normal Form)** principles to eliminate redundancy and ensure data integrity.
+
+### Core Entities
+
+The database consists of 10 main entities:
+
+1. **User** - Registered users (customers, admins, restaurant owners)
+2. **Address** - User delivery addresses (normalized)
+3. **Restaurant** - Food vendor establishments
+4. **MenuItem** - Food items offered by restaurants
+5. **Order** - Customer orders
+6. **OrderItem** - Junction table linking orders and menu items
+7. **DeliveryPerson** - Delivery personnel
+8. **OrderTracking** - Order status history and location tracking
+9. **Payment** - Payment transactions
+10. **Review** - Customer reviews for orders/restaurants
+
+### Database Schema Documentation
+
+For complete database documentation including:
+- Detailed entity descriptions
+- Entity-relationship diagrams
+- Keys, constraints, and indexes
+- Normalization principles
+- Common queries and optimizations
+- Scalability considerations
+
+📄 **See:** [DATABASE_SCHEMA.md](./foodontracks/DATABASE_SCHEMA.md)
+
+### Quick Start - PostgreSQL Setup
+
+#### 1. Install PostgreSQL
+
+**Windows:**
+- Download from: https://www.postgresql.org/download/windows/
+- Run installer, set password for `postgres` user
+- Default port: 5432
+
+**Verify installation:**
+```bash
+psql --version
+```
+
+#### 2. Create Database
+
+```bash
+# Connect to PostgreSQL
+psql -U postgres
+
+# Create database
+CREATE DATABASE foodontracks;
+
+# Exit
+\q
+```
+
+#### 3. Configure Environment Variables
+
+Update `.env` in the `foodontracks` folder:
+
+```env
+DATABASE_URL="postgresql://postgres:your_password@localhost:5432/foodontracks?schema=public"
+```
+
+Replace `your_password` with your PostgreSQL password.
+
+#### 4. Install Dependencies
+
+```bash
+cd foodontracks
+npm install
+```
+
+#### 5. Run Migrations
+
+```bash
+# Create tables from schema
+npm run db:migrate
+
+# Or using npx
+npx prisma migrate dev --name init_schema
+```
+
+**What this does:**
+- Creates all tables, constraints, indexes
+- Applies the schema to your PostgreSQL database
+- Generates Prisma Client for type-safe queries
+
+#### 6. Seed Database with Sample Data
+
+```bash
+npm run db:seed
+```
+
+**Seed data includes:**
+- 3 Users (John Doe, Jane Smith, Admin)
+- 2 Addresses
+- 3 Restaurants (Pizza Palace, Burger Barn, Sushi Symphony)
+- 8 Menu Items
+- 2 Delivery Persons
+- 2 Orders with tracking history
+- Payments and reviews
+
+#### 7. View Database with Prisma Studio
+
+```bash
+npm run db:studio
+```
+
+Opens a visual database editor at `http://localhost:5555`
+
+### Database Commands Reference
+
+```bash
+# Run migrations (create/update tables)
+npm run db:migrate
+
+# Open Prisma Studio (visual database editor)
+npm run db:studio
+
+# Seed database with sample data
+npm run db:seed
+
+# Reset database (WARNING: Deletes all data)
+npm run db:reset
+```
+
+### Schema Highlights
+
+#### Normalization (3NF Compliant)
+✅ **No repeating groups** - All attributes are atomic
+✅ **No partial dependencies** - All non-key attributes depend on the entire primary key
+✅ **No transitive dependencies** - No non-key attribute depends on another non-key attribute
+
+#### Referential Integrity
+- Foreign keys with `CASCADE` or `RESTRICT` rules
+- Prevents orphaned records
+- Maintains data consistency
+
+#### Performance Optimizations
+- **15+ indexes** on frequently queried columns
+- Composite unique constraints
+- Efficient relationship traversal
+
+#### Data Integrity
+- Check constraints (e.g., `rating` between 1-5)
+- Unique constraints (emails, phone numbers)
+- NOT NULL constraints on required fields
+- Enum types for controlled values
+
+### Entity Relationship Summary
+
+```
+User (1) ────< (M) Address
+User (1) ────< (M) Order
+User (1) ────< (M) Review
+
+Restaurant (1) ──< (M) MenuItem
+Restaurant (1) ──< (M) Order  
+Restaurant (1) ──< (M) Review
+
+Order (1) ───────< (M) OrderItem
+Order (1) ───────< (M) OrderTracking
+Order (1) ──────── (1) Payment
+Order (1) ──────── (1) Review
+
+MenuItem (1) ────< (M) OrderItem
+DeliveryPerson (1) < (M) Order
+Address (1) ─────< (M) Order
+```
+
+### Migration Logs
+
+#### Initial Schema Migration - December 15, 2025
+
+**Migration:** `init_schema`
+
+**Tables Created:**
+- User, Address, Restaurant, MenuItem
+- Order, OrderItem, DeliveryPerson
+- OrderTracking, Payment, Review
+
+**Indexes Created:** 15 indexes on high-traffic columns
+
+**Seed Data:** Successfully inserted 100+ records
+
+**Verification:**
+```bash
+# Check table structure
+npx prisma db pull
+
+# View in Prisma Studio
+npm run db:studio
+```
+
+### Sample Queries
+
+#### Get User's Order History
+```typescript
+const orders = await prisma.order.findMany({
+  where: { userId: 1 },
+  include: {
+    restaurant: true,
+    orderItems: {
+      include: { menuItem: true }
+    },
+    tracking: true
+  }
+})
+```
+
+#### Track Order Status
+```typescript
+const tracking = await prisma.orderTracking.findMany({
+  where: { orderId: 1 },
+  orderBy: { timestamp: 'asc' }
+})
+```
+
+#### Get Available Delivery Persons
+```typescript
+const available = await prisma.deliveryPerson.findMany({
+  where: { isAvailable: true },
+  orderBy: { rating: 'desc' }
+})
+```
+
+### Scalability Considerations
+
+1. **Connection Pooling:** Prisma uses connection pooling by default
+2. **Read Replicas:** Can configure for read-heavy operations
+3. **Partitioning:** Order tables can be partitioned by date
+4. **Caching:** Frequently accessed data cached at application layer
+5. **Indexing Strategy:** Indexes on all foreign keys and query columns
+
+### Reflection
+
+**Why PostgreSQL?**
+- ✅ **ACID Compliance:** Ensures data consistency
+- ✅ **Rich Data Types:** JSON, arrays, enums
+- ✅ **Advanced Indexing:** B-tree, GiST, GIN indexes
+- ✅ **Scalability:** Supports large datasets and high concurrency
+- ✅ **Open Source:** No licensing costs
+
+**Why Prisma?**
+- ✅ **Type Safety:** Auto-generated TypeScript types
+- ✅ **Schema-First:** Declarative schema definition
+- ✅ **Migrations:** Automatic migration generation
+- ✅ **Query Builder:** Intuitive API for complex queries
+- ✅ **Studio:** Visual database editor included
+
+**Design Decisions:**
+
+1. **Normalized to 3NF:** Eliminates data redundancy, prevents anomalies
+2. **Separate OrderItem table:** Avoids many-to-many issues, preserves price history
+3. **OrderTracking table:** Maintains complete status history for transparency
+4. **Enums for status:** Ensures data consistency, prevents typos
+5. **Cascade deletes:** Automatic cleanup of dependent records
+
+**Common Query Patterns:**
+- Order history queries filtered by userId, restaurantId, status
+- Menu item searches by category, availability, price range
+- Real-time order tracking by orderId
+- Restaurant discovery by location (city, zipCode)
+- Delivery person assignment by availability and rating
+
+---
+
