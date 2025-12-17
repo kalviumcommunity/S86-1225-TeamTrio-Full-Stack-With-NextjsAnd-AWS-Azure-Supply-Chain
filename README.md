@@ -66,13 +66,67 @@ cd foodontracks
 npm install
 ```
 
-### 2️⃣ Run development server
+### 2️⃣ Configure Database
+```bash
+# Create .env file with database connection
+DATABASE_URL="postgresql://postgres:password@localhost:5432/foodontracks?schema=public"
+
+# Run migrations
+npx prisma migrate dev
+
+# Seed the database
+npm run db:seed
+```
+
+### 3️⃣ Run development server
 ```bash
 npm run dev
 ```
 
-### 3️⃣ Open browser
+### 4️⃣ Open browser
 Navigate to `http://localhost:3000`
+
+---
+
+## 🔌 RESTful API
+
+FoodONtracks provides a complete RESTful API for all operations. See [API_DOCUMENTATION.md](foodontracks/API_DOCUMENTATION.md) for comprehensive details.
+
+### Quick API Reference
+
+**Base URL**: `http://localhost:3000/api`
+
+| Resource | Endpoints | Description |
+|----------|-----------|-------------|
+| **Users** | GET/POST `/users`<br>GET/PUT/DELETE `/users/[id]` | User management with role-based access |
+| **Restaurants** | GET/POST `/restaurants`<br>GET/PUT/DELETE `/restaurants/[id]` | Restaurant CRUD with filtering |
+| **Menu Items** | GET/POST `/menu-items`<br>GET/PUT/DELETE `/menu-items/[id]` | Menu management with availability |
+| **Orders** | GET/POST `/orders`<br>GET/PATCH/DELETE `/orders/[id]` | Order lifecycle with tracking |
+| **Addresses** | GET/POST `/addresses`<br>GET/PUT/DELETE `/addresses/[id]` | Delivery address management |
+| **Reviews** | GET/POST `/reviews` | Restaurant reviews with ratings |
+| **Delivery Persons** | GET/POST `/delivery-persons`<br>GET/PUT/DELETE `/delivery-persons/[id]` | Delivery personnel management |
+
+### Testing the API
+
+**Run automated tests:**
+```powershell
+# Windows PowerShell
+.\test-api.ps1
+```
+
+**Manual testing with cURL:**
+```bash
+# Get all restaurants
+curl -X GET "http://localhost:3000/api/restaurants?page=1&limit=10"
+
+# Create a new order
+curl -X POST http://localhost:3000/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{"userId":1,"restaurantId":1,"addressId":1,"orderItems":[{"menuItemId":1,"quantity":2}],"deliveryFee":3.99,"tax":2.50,"discount":0}'
+```
+
+See [TEST_RESULTS.md](foodontracks/TEST_RESULTS.md) for detailed testing guide and examples.
+
 ---
 
 ## 🗄️ Database Migrations & Seeding
