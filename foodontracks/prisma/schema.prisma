@@ -114,12 +114,16 @@ model MenuItem {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  // Stock for inventory tracking
+  stock           Int       @default(100)
+
   // Relation: menu item can appear in many order items
   orderItems      OrderItem[]
 
   @@index([restaurantId])
   @@index([category])
   @@index([isAvailable])
+  @@index([name])
 }
 
 model Order {
@@ -154,6 +158,7 @@ model Order {
   @@index([status])
   @@index([orderNumber])
   @@index([createdAt])
+  @@index([userId, createdAt])
 }
 
 model OrderItem {
