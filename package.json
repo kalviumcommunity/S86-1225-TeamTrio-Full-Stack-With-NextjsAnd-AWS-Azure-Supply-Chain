@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "dev": "npm --prefix ./foodontracks run dev",
+    "start": "npm --prefix ./foodontracks run start",
+    "db:migrate": "npm --prefix ./foodontracks run db:migrate",
+    "db:generate": "npm --prefix ./foodontracks run db:generate",
+    "db:seed": "npm --prefix ./foodontracks run db:seed",
+    "db:studio": "npm --prefix ./foodontracks run db:studio",
+    "db:reset": "npm --prefix ./foodontracks run db:reset"
   },
   "devDependencies": {
     "husky": "^8.0.0"
