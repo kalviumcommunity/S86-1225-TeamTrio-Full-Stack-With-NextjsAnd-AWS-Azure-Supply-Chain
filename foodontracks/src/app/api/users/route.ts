@@ -1,7 +1,9 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSuccess, sendError } from "@/lib/responseHandler";
 import { ERROR_CODES } from "@/lib/errorCodes";
+import { createUserSchema } from "@/lib/schemas/userSchema";
+import { validateData } from "@/lib/validationUtils";
 import * as bcrypt from "bcrypt";
 
 // GET /api/users - Get all users with pagination
@@ -65,16 +67,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, phoneNumber, password, role } = body;
 
-    // Validation
-    if (!name || !email || !password) {
-      return sendError(
-        "Name, email, and password are required",
-        ERROR_CODES.MISSING_REQUIRED_FIELD,
-        400
-      );
+    // Validate input using Zod schema
+    const validationResult = validateData(createUserSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
     }
+
+    const { name, email, phoneNumber, password, role } = validationResult.data;
 
     // Check if user already exists
     const existingUser = await prisma.user.findFirst({

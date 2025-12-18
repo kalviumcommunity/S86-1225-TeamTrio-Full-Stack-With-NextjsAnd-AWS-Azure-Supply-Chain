@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { updateDeliveryPersonSchema } from "@/lib/schemas/deliveryPersonSchema";
+import { validateData } from "@/lib/validationUtils";
 
 // GET /api/delivery-persons/[id] - Get specific delivery person
 export async function GET(
@@ -81,15 +83,12 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const {
-      name,
-      email,
-      phoneNumber,
-      vehicleType,
-      vehicleNumber,
-      isAvailable,
-      rating,
-    } = body;
+
+    // Validate input using Zod schema
+    const validationResult = validateData(updateDeliveryPersonSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
+    }
 
     // Check if delivery person exists
     const existingDeliveryPerson = await prisma.deliveryPerson.findUnique({
@@ -102,6 +101,8 @@ export async function PUT(
         { status: 404 }
       );
     }
+
+    const { email, phoneNumber } = validationResult.data;
 
     // Check for email uniqueness if email is being updated
     if (email && email !== existingDeliveryPerson.email) {
@@ -133,15 +134,7 @@ export async function PUT(
 
     const updatedDeliveryPerson = await prisma.deliveryPerson.update({
       where: { id: deliveryPersonId },
-      data: {
-        ...(name && { name }),
-        ...(email && { email }),
-        ...(phoneNumber && { phoneNumber }),
-        ...(vehicleType && { vehicleType }),
-        ...(vehicleNumber && { vehicleNumber }),
-        ...(typeof isAvailable === "boolean" && { isAvailable }),
-        ...(rating && { rating }),
-      },
+      data: validationResult.data,
     });
 
     return NextResponse.json({

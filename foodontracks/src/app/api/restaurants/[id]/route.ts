@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { updateRestaurantSchema } from "@/lib/schemas/restaurantSchema";
+import { validateData } from "@/lib/validationUtils";
 
 // GET /api/restaurants/[id] - Get a specific restaurant
 export async function GET(
@@ -68,6 +70,12 @@ export async function PUT(
 
     const body = await req.json();
 
+    // Validate input using Zod schema
+    const validationResult = validateData(updateRestaurantSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
+    }
+
     // Check if restaurant exists
     const existingRestaurant = await prisma.restaurant.findUnique({
       where: { id: restaurantId },
@@ -83,7 +91,7 @@ export async function PUT(
     // Update restaurant
     const restaurant = await prisma.restaurant.update({
       where: { id: restaurantId },
-      data: body,
+      data: validationResult.data,
     });
 
     return NextResponse.json({

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createReviewSchema } from "@/lib/schemas/reviewSchema";
+import { validateData } from "@/lib/validationUtils";
 
 // GET /api/reviews - Get all reviews with pagination
 export async function GET(req: NextRequest) {
@@ -74,25 +76,18 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userId, restaurantId, orderId, rating, comment } = body;
 
-    if (!userId || !restaurantId || !orderId || !rating) {
-      return NextResponse.json(
-        { error: "Required fields: userId, restaurantId, orderId, rating" },
-        { status: 400 }
-      );
+    // Validate input using Zod schema
+    const validationResult = validateData(createReviewSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
     }
 
-    if (rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { error: "Rating must be between 1 and 5" },
-        { status: 400 }
-      );
-    }
+    const { userId, restaurantId, orderId, rating, comment } = validationResult.data;
 
     // Check if order exists and is delivered
     const order = await prisma.order.findUnique({
-      where: { id: parseInt(orderId) },
+      where: { id: orderId },
     });
 
     if (!order) {
@@ -108,7 +103,7 @@ export async function POST(req: NextRequest) {
 
     // Check if review already exists
     const existingReview = await prisma.review.findUnique({
-      where: { orderId: parseInt(orderId) },
+      where: { orderId },
     });
 
     if (existingReview) {
@@ -122,22 +117,22 @@ export async function POST(req: NextRequest) {
     const review = await prisma.$transaction(async (tx) => {
       const newReview = await tx.review.create({
         data: {
-          userId: parseInt(userId),
-          restaurantId: parseInt(restaurantId),
-          orderId: parseInt(orderId),
-          rating: parseInt(rating),
+          userId,
+          restaurantId,
+          orderId,
+          rating,
           comment,
         },
       });
 
       // Update restaurant average rating
       const avgRating = await tx.review.aggregate({
-        where: { restaurantId: parseInt(restaurantId) },
+        where: { restaurantId },
         _avg: { rating: true },
       });
 
       await tx.restaurant.update({
-        where: { id: parseInt(restaurantId) },
+        where: { id: restaurantId },
         data: { rating: avgRating._avg.rating || 0 },
       });
 

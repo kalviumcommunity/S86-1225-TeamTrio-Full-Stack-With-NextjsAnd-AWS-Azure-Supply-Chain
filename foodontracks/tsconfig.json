@@ -22,8 +22,7 @@
   "@/*": [
     "src/app/*"
   ]
-}
-,
+},
     "allowJs": true,
     "skipLibCheck": true,
     "incremental": true,

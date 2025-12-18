@@ -1,8 +1,21 @@
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { createPaymentSchema } from '@/lib/schemas/paymentSchema';
+import { validateData } from '@/lib/validationUtils';
 
 export async function POST(request: Request) {
   const body = await request.json();
+
+  // For transaction endpoint, we'll validate the payment method and amount only
+  const validationResult = validateData(
+    createPaymentSchema.omit({ orderId: true }),
+    { amount: body.totalAmount, paymentMethod: body.paymentMethod, transactionId: 'temp' }
+  );
+  
+  if (!validationResult.success) {
+    return NextResponse.json(validationResult, { status: 400 });
+  }
+
   const { userId, items, paymentMethod, fail = false } = body;
 
   try {

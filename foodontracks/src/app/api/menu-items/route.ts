@@ -1,7 +1,9 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSuccess, sendError } from "@/lib/responseHandler";
 import { ERROR_CODES } from "@/lib/errorCodes";
+import { createMenuItemSchema } from "@/lib/schemas/menuItemSchema";
+import { validateData } from "@/lib/validationUtils";
 
 // GET /api/menu-items - Get all menu items with pagination
 export async function GET(req: NextRequest) {
@@ -73,6 +75,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // Validate input using Zod schema
+    const validationResult = validateData(createMenuItemSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
+    }
+
     const {
       restaurantId,
       name,
@@ -81,20 +90,12 @@ export async function POST(req: NextRequest) {
       category,
       imageUrl,
       preparationTime,
-    } = body;
-
-    // Validation
-    if (!restaurantId || !name || !price || !category || !preparationTime) {
-      return sendError(
-        "Required fields: restaurantId, name, price, category, preparationTime",
-        ERROR_CODES.MISSING_REQUIRED_FIELD,
-        400
-      );
-    }
+      stock,
+    } = validationResult.data;
 
     // Verify restaurant exists
     const restaurant = await prisma.restaurant.findUnique({
-      where: { id: parseInt(restaurantId) },
+      where: { id: restaurantId },
     });
 
     if (!restaurant) {
@@ -108,13 +109,14 @@ export async function POST(req: NextRequest) {
     // Create menu item
     const menuItem = await prisma.menuItem.create({
       data: {
-        restaurantId: parseInt(restaurantId),
+        restaurantId,
         name,
         description,
-        price: parseFloat(price),
+        price,
         category,
         imageUrl,
-        preparationTime: parseInt(preparationTime),
+        preparationTime,
+        stock,
       },
     });
 

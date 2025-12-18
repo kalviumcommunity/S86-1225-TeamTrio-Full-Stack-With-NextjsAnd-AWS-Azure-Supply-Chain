@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { updateUserSchema } from "@/lib/schemas/userSchema";
+import { validateData } from "@/lib/validationUtils";
 import * as bcrypt from "bcrypt";
 
 // GET /api/users/[id] - Get a specific user by ID
@@ -73,7 +75,12 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { name, email, phoneNumber, password, role } = body;
+
+    // Validate input using Zod schema
+    const validationResult = validateData(updateUserSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
+    }
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -84,21 +91,19 @@ export async function PUT(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const { name, email, phoneNumber, role } = validationResult.data;
+
     // Prepare update data
     const updateData: {
       name?: string;
       email?: string;
-      phoneNumber?: string;
+      phoneNumber?: string | null;
       role?: string;
-      password?: string;
     } = {};
-    if (name) updateData.name = name;
-    if (email) updateData.email = email;
-    if (phoneNumber) updateData.phoneNumber = phoneNumber;
-    if (role) updateData.role = role;
-    if (password) {
-      updateData.password = await bcrypt.hash(password, 10);
-    }
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+    if (role !== undefined) updateData.role = role;
 
     // Update user
     const user = await prisma.user.update({

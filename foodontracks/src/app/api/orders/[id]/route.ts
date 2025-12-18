@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { updateOrderSchema } from "@/lib/schemas/orderSchema";
+import { validateData } from "@/lib/validationUtils";
 
 // GET /api/orders/[id]
 export async function GET(
@@ -69,7 +71,12 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { status, deliveryPersonId, location, notes } = body;
+
+    // Validate input using Zod schema
+    const validationResult = validateData(updateOrderSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
+    }
 
     // Check if order exists
     const existingOrder = await prisma.order.findUnique({
@@ -80,20 +87,19 @@ export async function PATCH(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
+    const { status, specialInstructions, deliveryPersonId } = validationResult.data;
+
     // Update order and create tracking event in transaction
     const order = await prisma.$transaction(async (tx) => {
       const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
-          status: status || existingOrder.status,
-          deliveryPersonId:
-            deliveryPersonId !== undefined
-              ? deliveryPersonId
-              : existingOrder.deliveryPersonId,
-          actualDeliveryTime:
-            status === "DELIVERED"
-              ? new Date()
-              : existingOrder.actualDeliveryTime,
+          ...(status && { status }),
+          ...(specialInstructions !== undefined && { specialInstructions }),
+          ...(deliveryPersonId !== undefined && { deliveryPersonId }),
+          ...(status === "DELIVERED" && !existingOrder.actualDeliveryTime && {
+            actualDeliveryTime: new Date(),
+          }),
         },
         include: {
           orderItems: {
@@ -110,8 +116,6 @@ export async function PATCH(
           data: {
             orderId,
             status,
-            location,
-            notes,
           },
         });
       }
@@ -146,9 +150,81 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { status, deliveryPersonId, location, notes } = body;
+
+    // Validate input using Zod schema
+    const validationResult = validateData(updateOrderSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
+    }
 
     // Check if order exists
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!existingOrder) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    const { status, specialInstructions, deliveryPersonId } = validationResult.data;
+
+    // Update order and create tracking event in transaction
+    const order = await prisma.$transaction(async (tx) => {
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          ...(status && { status }),
+          ...(specialInstructions !== undefined && { specialInstructions }),
+          ...(deliveryPersonId !== undefined && { deliveryPersonId }),
+          ...(status === "DELIVERED" && !existingOrder.actualDeliveryTime && {
+            actualDeliveryTime: new Date(),
+          }),
+        },
+        include: {
+          orderItems: {
+            include: {
+              menuItem: true,
+            },
+          },
+        },
+      });
+
+      // Create tracking event if status changed
+      if (status && status !== existingOrder.status) {
+        await tx.orderTracking.create({
+          data: {
+            orderId,
+            status,
+          },
+        });
+      }
+
+      return updatedOrder;
+    });
+
+    return NextResponse.json({
+      message: "Order updated successfully",
+      data: order,
+    });
+  } catch (error) {
+    console.error("Error updating order:", error);
+    return NextResponse.json(
+      { error: "Failed to update order" },
+      { status: 500 }
+    );
+  }
+}
+    if (isNaN(orderId)) {
+      return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
+    }
+
+    const body = await req.json();
+
+    // Validate input using Zod schema
+    const validationResult = validateData(updateOrderSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
+    }    // Check if order exists
     const existingOrder = await prisma.order.findUnique({
       where: { id: orderId },
     });

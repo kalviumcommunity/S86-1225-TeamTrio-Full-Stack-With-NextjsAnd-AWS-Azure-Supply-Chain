@@ -1,7 +1,9 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSuccess, sendError } from "@/lib/responseHandler";
 import { ERROR_CODES } from "@/lib/errorCodes";
+import { createOrderSchema } from "@/lib/schemas/orderSchema";
+import { validateData } from "@/lib/validationUtils";
 
 // GET /api/orders - Get all orders with pagination
 export async function GET(req: NextRequest) {
@@ -101,37 +103,29 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // Validate input using Zod schema
+    const validationResult = validateData(createOrderSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
+    }
+
     const {
       userId,
       restaurantId,
       addressId,
-      orderItems, // Array of { menuItemId, quantity }
+      orderItems,
       deliveryFee,
       tax,
       discount,
       specialInstructions,
-    } = body;
-
-    // Validation
-    if (
-      !userId ||
-      !restaurantId ||
-      !addressId ||
-      !orderItems ||
-      orderItems.length === 0
-    ) {
-      return sendError(
-        "Required fields: userId, restaurantId, addressId, orderItems",
-        ERROR_CODES.MISSING_REQUIRED_FIELD,
-        400
-      );
-    }
+    } = validationResult.data;
 
     // Verify user, restaurant, and address exist
     const [user, restaurant, address] = await Promise.all([
-      prisma.user.findUnique({ where: { id: parseInt(userId) } }),
-      prisma.restaurant.findUnique({ where: { id: parseInt(restaurantId) } }),
-      prisma.address.findUnique({ where: { id: parseInt(addressId) } }),
+      prisma.user.findUnique({ where: { id: userId } }),
+      prisma.restaurant.findUnique({ where: { id: restaurantId } }),
+      prisma.address.findUnique({ where: { id: addressId } }),
     ]);
 
     if (!user || !restaurant || !address) {
@@ -143,9 +137,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch menu items and calculate total
-    const menuItemIds = orderItems.map(
-      (item: { menuItemId: number; quantity: number }) => item.menuItemId
-    );
+    const menuItemIds = orderItems.map((item) => item.menuItemId);
     const menuItems = await prisma.menuItem.findMany({
       where: { id: { in: menuItemIds } },
     });
@@ -160,19 +152,17 @@ export async function POST(req: NextRequest) {
 
     // Calculate total amount
     let totalAmount = 0;
-    const orderItemsData = orderItems.map(
-      (item: { menuItemId: number; quantity: number }) => {
-        const menuItem = menuItems.find((mi) => mi.id === item.menuItemId);
-        const itemTotal = menuItem!.price * item.quantity;
-        totalAmount += itemTotal;
+    const orderItemsData = orderItems.map((item) => {
+      const menuItem = menuItems.find((mi) => mi.id === item.menuItemId);
+      const itemTotal = menuItem!.price * item.quantity;
+      totalAmount += itemTotal;
 
-        return {
-          menuItemId: item.menuItemId,
-          quantity: item.quantity,
-          priceAtTime: menuItem!.price,
-        };
-      }
-    );
+      return {
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+        priceAtTime: menuItem!.price,
+      };
+    });
 
     const finalTotal =
       totalAmount + (deliveryFee || 0) + (tax || 0) - (discount || 0);
@@ -181,9 +171,9 @@ export async function POST(req: NextRequest) {
     const order = await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
         data: {
-          userId: parseInt(userId),
-          restaurantId: parseInt(restaurantId),
-          addressId: parseInt(addressId),
+          userId,
+          restaurantId,
+          addressId,
           status: "PENDING",
           totalAmount: finalTotal,
           deliveryFee: deliveryFee || 0,

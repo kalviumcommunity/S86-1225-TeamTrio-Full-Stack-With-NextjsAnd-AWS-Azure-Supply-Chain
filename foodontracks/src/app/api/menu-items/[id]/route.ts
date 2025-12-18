@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { updateMenuItemSchema } from "@/lib/schemas/menuItemSchema";
+import { validateData } from "@/lib/validationUtils";
 
 // GET /api/menu-items/[id]
 export async function GET(
@@ -59,6 +61,12 @@ export async function PUT(
 
     const body = await req.json();
 
+    // Validate input using Zod schema
+    const validationResult = validateData(updateMenuItemSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
+    }
+
     // Check if menu item exists
     const existingMenuItem = await prisma.menuItem.findUnique({
       where: { id: menuItemId },
@@ -74,7 +82,7 @@ export async function PUT(
     // Update menu item
     const menuItem = await prisma.menuItem.update({
       where: { id: menuItemId },
-      data: body,
+      data: validationResult.data,
     });
 
     return NextResponse.json({

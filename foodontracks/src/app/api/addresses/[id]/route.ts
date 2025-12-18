@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { updateAddressSchema } from "@/lib/schemas/addressSchema";
+import { validateData } from "@/lib/validationUtils";
 
 // GET /api/addresses/[id]
 export async function GET(
@@ -53,9 +55,15 @@ export async function PUT(
 
     const body = await req.json();
 
+    // Validate input using Zod schema
+    const validationResult = validateData(updateAddressSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
+    }
+
     const address = await prisma.address.update({
       where: { id: addressId },
-      data: body,
+      data: validationResult.data,
     });
 
     return NextResponse.json({

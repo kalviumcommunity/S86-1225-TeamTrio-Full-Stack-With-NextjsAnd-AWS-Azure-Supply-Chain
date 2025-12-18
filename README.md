@@ -260,6 +260,164 @@ export async function POST(req: Request) {
 - Made API more professional and production-ready
 - Simplified API documentation with uniform examples
 
+---
+
+## ✅ Input Validation with Zod
+
+**Complete Documentation:** [INPUT_VALIDATION_GUIDE.md](foodontracks/docs/INPUT_VALIDATION_GUIDE.md)
+
+### Overview
+
+All POST and PUT endpoints are protected with **Zod schema validation** to ensure data integrity, security, and consistency across the API.
+
+### Key Features
+
+✅ **Type-Safe Validation** — Zod schemas provide runtime validation with TypeScript type inference  
+✅ **Reusable Schemas** — Share validation logic between client and server  
+✅ **Consistent Errors** — All validation errors follow the same structured format  
+✅ **Clear Messages** — Descriptive error messages guide developers and end-users  
+✅ **Fail Fast** — Invalid data rejected immediately with HTTP 400  
+
+### Schema Examples
+
+**User Creation Schema:**
+```typescript
+export const createUserSchema = z.object({
+  name: z.string().min(2).max(100),
+  email: z.string().email(),
+  password: z.string().min(6).max(100),
+  role: z.enum(["CUSTOMER", "ADMIN", "RESTAURANT_OWNER"]).default("CUSTOMER"),
+});
+```
+
+**Order Schema with Items:**
+```typescript
+export const createOrderSchema = z.object({
+  userId: z.number().int().positive(),
+  restaurantId: z.number().int().positive(),
+  addressId: z.number().int().positive(),
+  orderItems: z.array(orderItemSchema).min(1),
+  deliveryFee: z.number().nonnegative().default(0),
+  tax: z.number().nonnegative().default(0),
+  discount: z.number().nonnegative().default(0),
+});
+```
+
+### Validation Error Response
+
+```json
+{
+  "success": false,
+  "message": "Validation Error",
+  "errors": [
+    {
+      "field": "email",
+      "message": "Invalid email address"
+    },
+    {
+      "field": "password",
+      "message": "String must contain at least 6 character(s)"
+    }
+  ]
+}
+```
+
+### Testing Validation
+
+**Valid Request:**
+```bash
+curl -X POST http://localhost:3000/api/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Alice Johnson",
+    "email": "alice@example.com",
+    "password": "SecurePass123"
+  }'
+```
+
+**Invalid Request (Missing Email):**
+```bash
+curl -X POST http://localhost:3000/api/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Alice",
+    "password": "123"
+  }'
+```
+
+Response:
+```json
+{
+  "success": false,
+  "message": "Validation Error",
+  "errors": [
+    {
+      "field": "email",
+      "message": "Required"
+    },
+    {
+      "field": "password",
+      "message": "String must contain at least 6 character(s)"
+    }
+  ]
+}
+```
+
+### Validated Endpoints
+
+All endpoints listed below use Zod validation:
+
+| Method | Endpoint | Schema |
+|--------|----------|--------|
+| POST | `/api/users` | `createUserSchema` |
+| PUT | `/api/users/[id]` | `updateUserSchema` |
+| POST | `/api/restaurants` | `createRestaurantSchema` |
+| PUT | `/api/restaurants/[id]` | `updateRestaurantSchema` |
+| POST | `/api/menu-items` | `createMenuItemSchema` |
+| PUT | `/api/menu-items/[id]` | `updateMenuItemSchema` |
+| POST | `/api/orders` | `createOrderSchema` |
+| PUT | `/api/orders/[id]` | `updateOrderSchema` |
+| POST | `/api/addresses` | `createAddressSchema` |
+| PUT | `/api/addresses/[id]` | `updateAddressSchema` |
+| POST | `/api/delivery-persons` | `createDeliveryPersonSchema` |
+| PUT | `/api/delivery-persons/[id]` | `updateDeliveryPersonSchema` |
+| POST | `/api/reviews` | `createReviewSchema` |
+
+### Validation Architecture
+
+**Schemas Location:** `src/lib/schemas/`
+- `userSchema.ts` — User validation
+- `restaurantSchema.ts` — Restaurant validation
+- `menuItemSchema.ts` — Menu item validation
+- `orderSchema.ts` — Order validation
+- `addressSchema.ts` — Address validation
+- `deliveryPersonSchema.ts` — Delivery person validation
+- `reviewSchema.ts` — Review validation
+- `paymentSchema.ts` — Payment validation
+- `trackingSchema.ts` — Order tracking validation
+
+**Validation Utility:** `src/lib/validationUtils.ts`
+```typescript
+// Usage in API routes
+const validationResult = validateData(createUserSchema, requestBody);
+if (!validationResult.success) {
+  return NextResponse.json(validationResult, { status: 400 });
+}
+```
+
+### Why This Matters for Teams
+
+✅ **Single Source of Truth** — Schemas define API contracts  
+✅ **Type Safety** — Compile-time and runtime checking  
+✅ **Consistency** — All validation errors follow same format  
+✅ **Documentation** — Schemas are self-documenting  
+✅ **Maintainability** — Update validation in one place  
+✅ **Collaboration** — Clear expectations across team  
+
+[→ Full Validation Documentation](foodontracks/docs/INPUT_VALIDATION_GUIDE.md)
+
+---
+
 ### Testing the API
 
 **Run automated tests:**

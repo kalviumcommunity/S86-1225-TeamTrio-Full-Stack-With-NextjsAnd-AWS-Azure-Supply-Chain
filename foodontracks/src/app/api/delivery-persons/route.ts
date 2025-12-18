@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createDeliveryPersonSchema } from "@/lib/schemas/deliveryPersonSchema";
+import { validateData } from "@/lib/validationUtils";
 
 // GET /api/delivery-persons - Get all delivery persons
 export async function GET(req: NextRequest) {
@@ -53,14 +55,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, phoneNumber, vehicleType, vehicleNumber } = body;
 
-    if (!name || !email || !phoneNumber || !vehicleType || !vehicleNumber) {
-      return NextResponse.json(
-        { error: "All fields are required" },
-        { status: 400 }
-      );
+    // Validate input using Zod schema
+    const validationResult = validateData(createDeliveryPersonSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
     }
+
+    const { name, email, phoneNumber, vehicleType, vehicleNumber, isAvailable } = validationResult.data;
 
     const deliveryPerson = await prisma.deliveryPerson.create({
       data: {
@@ -69,6 +71,7 @@ export async function POST(req: NextRequest) {
         phoneNumber,
         vehicleType,
         vehicleNumber,
+        isAvailable: isAvailable || true,
       },
     });
 

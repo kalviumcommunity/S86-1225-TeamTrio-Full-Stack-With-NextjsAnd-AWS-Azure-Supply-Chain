@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createAddressSchema } from "@/lib/schemas/addressSchema";
+import { validateData } from "@/lib/validationUtils";
 
 // GET /api/addresses
 export async function GET(req: NextRequest) {
@@ -33,6 +35,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // Validate input using Zod schema
+    const validationResult = validateData(createAddressSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
+    }
+
     const {
       userId,
       addressLine1,
@@ -42,34 +51,25 @@ export async function POST(req: NextRequest) {
       zipCode,
       country,
       isDefault,
-    } = body;
-
-    if (!userId || !addressLine1 || !city || !state || !zipCode) {
-      return NextResponse.json(
-        {
-          error: "Required fields: userId, addressLine1, city, state, zipCode",
-        },
-        { status: 400 }
-      );
-    }
+    } = validationResult.data;
 
     // If setting as default, unset other defaults
     if (isDefault) {
       await prisma.address.updateMany({
-        where: { userId: parseInt(userId), isDefault: true },
+        where: { userId, isDefault: true },
         data: { isDefault: false },
       });
     }
 
     const address = await prisma.address.create({
       data: {
-        userId: parseInt(userId),
+        userId,
         addressLine1,
         addressLine2,
         city,
         state,
         zipCode,
-        country: country || "USA",
+        country,
         isDefault: isDefault || false,
       },
     });

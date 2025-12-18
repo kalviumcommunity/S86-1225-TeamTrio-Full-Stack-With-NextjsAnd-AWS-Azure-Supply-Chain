@@ -1,7 +1,10 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSuccess, sendError } from "@/lib/responseHandler";
 import { ERROR_CODES } from "@/lib/errorCodes";
+import { createRestaurantSchema } from "@/lib/schemas/restaurantSchema";
+import { validateData } from "@/lib/validationUtils";
+import { validateData } from "@/lib/validationUtils";
 
 // GET /api/restaurants - Get all restaurants with pagination
 export async function GET(req: NextRequest) {
@@ -82,6 +85,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // Validate input using Zod schema
+    const validationResult = validateData(createRestaurantSchema, body);
+    if (!validationResult.success) {
+      return NextResponse.json(validationResult, { status: 400 });
+    }
+
     const {
       name,
       email,
@@ -91,24 +101,7 @@ export async function POST(req: NextRequest) {
       city,
       state,
       zipCode,
-    } = body;
-
-    // Validation
-    if (
-      !name ||
-      !email ||
-      !phoneNumber ||
-      !address ||
-      !city ||
-      !state ||
-      !zipCode
-    ) {
-      return sendError(
-        "All required fields must be provided",
-        ERROR_CODES.MISSING_REQUIRED_FIELD,
-        400
-      );
-    }
+    } = validationResult.data;
 
     // Check if restaurant already exists
     const existingRestaurant = await prisma.restaurant.findFirst({
