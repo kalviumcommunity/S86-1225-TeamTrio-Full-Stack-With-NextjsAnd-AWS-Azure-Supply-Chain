@@ -94,6 +94,54 @@ FoodONtracks provides a complete RESTful API for all operations. See [API_DOCUME
 
 ### Quick API Reference
 
+---
+
+## 🔐 Authentication (Signup, Login, Protected routes)
+
+We provide secure authentication endpoints using bcrypt for password hashing and JWT for session tokens.
+
+Endpoints
+- POST /api/auth/signup — Create a new user (name, email, password). Passwords are hashed with bcrypt before storage.
+- POST /api/auth/login — Verify credentials and receive a JWT (expires in 1 hour by default).
+- GET /api/users — Example protected endpoint: requires Authorization: Bearer <token>.
+
+Environment
+- Set `JWT_SECRET` in `foodontracks/.env` (do not commit production secrets). A default development key is present for local testing.
+
+Curl examples
+
+Signup:
+
+```bash
+curl -X POST http://localhost:3000/api/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Alice","email":"alice@example.com","password":"mypassword"}'
+```
+
+Login:
+
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alice@example.com","password":"mypassword"}'
+```
+
+Use token to access protected route:
+
+```bash
+curl -X GET http://localhost:3000/api/users \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+Security notes
+- Hash passwords with bcrypt (salt rounds = 10). Never store plain-text passwords.
+- Prefer HttpOnly cookies for storing session tokens to mitigate XSS; use refresh tokens for long-lived sessions.
+- Rotate `JWT_SECRET` in production and keep it in a secrets manager.
+
+---
+
+### Quick API Reference
+
 **Base URL**: `http://localhost:3000/api`
 
 | Resource | Endpoints | Description |
