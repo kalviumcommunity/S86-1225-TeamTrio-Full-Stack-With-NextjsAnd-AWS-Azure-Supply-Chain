@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { updateUserSchema } from "@/lib/schemas/userSchema";
-import { validateData } from "@/lib/validationUtils";
-import * as bcrypt from "bcrypt";
+import { handleError, AppError, ErrorType } from "@/lib/errorHandler";
+import { logger } from "@/lib/logger";
 
 // GET /api/users/[id] - Get a specific user by ID
 export async function GET(
@@ -14,7 +14,12 @@ export async function GET(
     const userId = parseInt(id);
 
     if (isNaN(userId)) {
-      return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
+      throw new AppError(
+        ErrorType.VALIDATION_ERROR,
+        400,
+        'Invalid user ID format',
+        { providedId: id }
+      );
     }
 
     const user = await prisma.user.findUnique({
@@ -48,16 +53,22 @@ export async function GET(
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      throw new AppError(
+        ErrorType.NOT_FOUND_ERROR,
+        404,
+        'User not found',
+        { userId }
+      );
     }
 
-    return NextResponse.json({ data: user });
+    logger.info('User retrieved', { userId });
+
+    return NextResponse.json({
+      success: true,
+      data: user,
+    });
   } catch (error) {
-    console.error("Error fetching user:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch user" },
-      { status: 500 }
-    );
+    return handleError(error, `GET /api/users/[id]`);
   }
 }
 
@@ -71,16 +82,18 @@ export async function PUT(
     const userId = parseInt(id);
 
     if (isNaN(userId)) {
-      return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
+      throw new AppError(
+        ErrorType.VALIDATION_ERROR,
+        400,
+        'Invalid user ID format',
+        { providedId: id }
+      );
     }
 
     const body = await req.json();
 
     // Validate input using Zod schema
-    const validationResult = validateData(updateUserSchema, body);
-    if (!validationResult.success) {
-      return NextResponse.json(validationResult, { status: 400 });
-    }
+    const validatedData = updateUserSchema.parse(body);
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -88,27 +101,18 @@ export async function PUT(
     });
 
     if (!existingUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      throw new AppError(
+        ErrorType.NOT_FOUND_ERROR,
+        404,
+        'User not found',
+        { userId }
+      );
     }
-
-    const { name, email, phoneNumber, role } = validationResult.data;
-
-    // Prepare update data
-    const updateData: {
-      name?: string;
-      email?: string;
-      phoneNumber?: string | null;
-      role?: string;
-    } = {};
-    if (name !== undefined) updateData.name = name;
-    if (email !== undefined) updateData.email = email;
-    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
-    if (role !== undefined) updateData.role = role;
 
     // Update user
     const user = await prisma.user.update({
       where: { id: userId },
-      data: updateData,
+      data: validatedData,
       select: {
         id: true,
         name: true,
@@ -119,16 +123,18 @@ export async function PUT(
       },
     });
 
+    logger.info('User updated successfully', {
+      userId,
+      updatedFields: Object.keys(validatedData),
+    });
+
     return NextResponse.json({
+      success: true,
       message: "User updated successfully",
       data: user,
     });
   } catch (error) {
-    console.error("Error updating user:", error);
-    return NextResponse.json(
-      { error: "Failed to update user" },
-      { status: 500 }
-    );
+    return handleError(error, `PUT /api/users/[id]`);
   }
 }
 
@@ -142,7 +148,12 @@ export async function DELETE(
     const userId = parseInt(id);
 
     if (isNaN(userId)) {
-      return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
+      throw new AppError(
+        ErrorType.VALIDATION_ERROR,
+        400,
+        'Invalid user ID format',
+        { providedId: id }
+      );
     }
 
     // Check if user exists
@@ -151,7 +162,12 @@ export async function DELETE(
     });
 
     if (!existingUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      throw new AppError(
+        ErrorType.NOT_FOUND_ERROR,
+        404,
+        'User not found',
+        { userId }
+      );
     }
 
     // Delete user (cascade will handle related records)
@@ -159,14 +175,13 @@ export async function DELETE(
       where: { id: userId },
     });
 
+    logger.info('User deleted', { userId });
+
     return NextResponse.json({
+      success: true,
       message: "User deleted successfully",
     });
   } catch (error) {
-    console.error("Error deleting user:", error);
-    return NextResponse.json(
-      { error: "Failed to delete user" },
-      { status: 500 }
-    );
+    return handleError(error, `DELETE /api/users/[id]`);
   }
 }

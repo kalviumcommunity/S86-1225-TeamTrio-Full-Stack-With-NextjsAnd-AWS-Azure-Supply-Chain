@@ -467,6 +467,181 @@ if (!validationResult.success) {
 
 ---
 
+## ✅ Centralized Error Handling Middleware
+
+**Complete Documentation:** [ERROR_HANDLING_GUIDE.md](foodontracks/docs/ERROR_HANDLING_GUIDE.md)
+
+### Overview
+
+All API endpoints use **centralized error handling middleware** to catch, classify, and respond to errors consistently. This provides security, debugging capability, and professional error responses.
+
+### Key Features
+
+✅ **Structured Logging** — Machine-readable JSON logs for production monitoring  
+✅ **Automatic Classification** — Detects error types (Zod, Prisma, JWT, etc.)  
+✅ **Environment-Aware** — Stack traces in dev, safe messages in production  
+✅ **Security** — Production mode redacts sensitive information  
+✅ **Context Preservation** — Request details retained for debugging  
+✅ **Easy Integration** — Drop-in error handler for all routes  
+
+### Error Types & Status Codes
+
+| Error Type | Status | Use Case |
+|-----------|--------|----------|
+| VALIDATION_ERROR | 400 | Input validation failed |
+| AUTHENTICATION_ERROR | 401 | Invalid/missing JWT token |
+| AUTHORIZATION_ERROR | 403 | Insufficient permissions |
+| NOT_FOUND_ERROR | 404 | Resource doesn't exist |
+| CONFLICT_ERROR | 409 | Data conflict (e.g., duplicate email) |
+| DATABASE_ERROR | 500 | Database operation failed |
+| EXTERNAL_API_ERROR | 502 | Third-party service failure |
+| INTERNAL_SERVER_ERROR | 500 | Unexpected application error |
+
+### Development Response Example
+
+```json
+{
+  "success": false,
+  "message": "Cannot read property 'email' of undefined",
+  "type": "INTERNAL_SERVER_ERROR",
+  "context": "POST /api/users",
+  "stack": "TypeError: Cannot read property 'email' of undefined\n    at Object.<anonymous> (src/app/api/users/route.ts:25:15)..."
+}
+```
+
+### Production Response Example
+
+```json
+{
+  "success": false,
+  "message": "An unexpected error occurred. Our team has been notified.",
+  "type": "INTERNAL_SERVER_ERROR"
+}
+```
+
+### Usage in Route Handlers
+
+**Basic Error Handling:**
+```typescript
+import { handleError, AppError, ErrorType } from '@/lib/errorHandler';
+import { logger } from '@/lib/logger';
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    
+    // Validate with Zod
+    const validated = createUserSchema.parse(body);
+    
+    // Create resource
+    const user = await prisma.user.create({ data: validated });
+    
+    // Log success
+    logger.info('User created', { userId: user.id, email: user.email });
+    
+    return NextResponse.json({ success: true, data: user }, { status: 201 });
+  } catch (error) {
+    // Error automatically classified and logged
+    return handleError(error, 'POST /api/users');
+  }
+}
+```
+
+**With Custom Error:**
+```typescript
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const userId = req.headers.get('x-user-id');
+    
+    // Custom validation
+    if (!userId) {
+      throw new AppError(
+        ErrorType.AUTHENTICATION_ERROR,
+        401,
+        'User not authenticated',
+        { context: 'DELETE /api/users/[id]' }
+      );
+    }
+    
+    const user = await prisma.user.delete({
+      where: { id: parseInt(params.id) },
+    });
+    
+    return NextResponse.json({ success: true, data: user });
+  } catch (error) {
+    return handleError(error, `DELETE /api/users/${params.id}`);
+  }
+}
+```
+
+### Automatic Error Classification
+
+**Zod Validation Errors:**
+```typescript
+// Automatically classified as VALIDATION_ERROR (400)
+const validated = createUserSchema.parse(body);
+```
+
+**Prisma Errors:**
+```typescript
+// P2025 (not found) → NOT_FOUND_ERROR (404)
+// P2002 (unique constraint) → CONFLICT_ERROR (409)
+// Other errors → DATABASE_ERROR (500)
+const user = await prisma.user.findUniqueOrThrow({ where: { id } });
+```
+
+**JWT Errors:**
+```typescript
+// JsonWebTokenError, TokenExpiredError → AUTHENTICATION_ERROR (401)
+const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+```
+
+### Integration with Existing Systems
+
+**Works alongside Input Validation:**
+```
+Client Request
+    ↓
+[Authorization Middleware] → JWT + role checks
+    ↓
+[Route Handler] → Zod validation
+    ↓
+[Error Handler] → Catches & formats errors
+    ↓
+Client Response
+```
+
+**Structured Logging Examples:**
+```typescript
+// Info level
+logger.info('Order created', { orderId: 123, userId: 456 });
+
+// Error level
+logger.error('Payment failed', { error: 'Timeout', orderId: 123 });
+
+// Warning level
+logger.warn('Low inventory', { restaurant: 'Pizza Place', items: 5 });
+
+// Debug level (dev only)
+logger.debug('Processing order', { orderId: 123, items: 3 });
+```
+
+### Why This Matters
+
+✅ **Professional** — Users see appropriate error messages  
+✅ **Secure** — Stack traces never exposed in production  
+✅ **Debuggable** — Developers get full details in development  
+✅ **Monitorable** — JSON logs integrate with external services  
+✅ **Consistent** — All errors handled uniformly  
+✅ **Maintainable** — Single place to update error behavior  
+
+[→ Full Error Handling Documentation](foodontracks/docs/ERROR_HANDLING_GUIDE.md)
+
+---
+
 ### Testing the API
 
 **Run automated tests:**
