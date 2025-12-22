@@ -5,8 +5,21 @@ Each food batch receives a unique Batch ID, and suppliers, kitchens, vendors, an
 
 ---
 
-## 🆕 Latest Feature: File Upload with Pre-Signed URLs
+## 🆕 Latest Features
 
+### 📧 Transactional Email System (AWS SES)
+✅ **Automated email notifications for user actions**
+- Welcome emails on signup
+- Order confirmations with details
+- Password reset links
+- Order status updates
+- Payment confirmations
+- Professional HTML templates
+
+📚 **Documentation**: [Email Implementation Guide](EMAIL_DOCUMENTATION.md)
+🧪 **Testing**: Run `.\foodontracks\test-email.ps1`
+
+### 📁 File Upload with Pre-Signed URLs (AWS S3)
 ✅ **Secure file uploads to AWS S3 using pre-signed URLs**
 - Direct client-to-cloud uploads (no backend bottleneck)
 - Multi-layer validation (type, size, permissions)
@@ -19,7 +32,7 @@ Each food batch receives a unique Batch ID, and suppliers, kitchens, vendors, an
 - [Implementation Summary](FILE_UPLOAD_SUMMARY.md)
 - [Flow Diagram](UPLOAD_FLOW_DIAGRAM.txt)
 
-🧪 **Testing**: Run `.\foodontracks\test-file-upload.ps1` or use Bruno collection in `testing/file-upload/`
+🧪 **Testing**: Run `.\foodontracks\test-file-upload.ps1`
 
 ---
 
