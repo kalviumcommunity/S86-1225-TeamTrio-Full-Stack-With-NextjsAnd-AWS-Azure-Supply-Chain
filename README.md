@@ -2555,4 +2555,814 @@ Referrer-Policy set:     ✅ Pass
 
 ---
 
+## ☁️ Cloud Database Configuration (AWS RDS / Azure PostgreSQL)
+
+FoodONtracks supports managed PostgreSQL databases on AWS RDS and Microsoft Azure for production-grade data persistence with automatic backups, monitoring, and disaster recovery.
+
+### Why Managed Databases Matter
+
+**Benefits of AWS RDS or Azure PostgreSQL:**
+- ✅ **Automatic Backups:** Daily snapshots with point-in-time recovery
+- ✅ **High Availability:** Multi-AZ failover (AWS) or Zone-redundant HA (Azure)
+- ✅ **Patching:** Automatic security and performance updates
+- ✅ **Monitoring:** CloudWatch (AWS) or Azure Monitor for performance metrics
+- ✅ **Scaling:** Vertical (instance size) and horizontal (read replicas)
+- ✅ **Security:** Network isolation, SSL/TLS encryption, IAM integration
+- ✅ **Compliance:** GDPR, HIPAA, SOC 2 certifications built-in
+- ✅ **Cost-Effective:** Pay-as-you-go pricing with Reserved Instances option
+
+### Comparison Matrix
+
+| Feature | AWS RDS | Azure PostgreSQL | Local Dev |
+|---------|---------|------------------|-----------|
+| **Cost/Month** | ~$17.30 | ~$25.12 | Free |
+| **Backup Retention** | 7-35 days | 7-35 days | Manual |
+| **High Availability** | Multi-AZ ✅ | Zone-Redundant ✅ | No |
+| **Monitoring** | CloudWatch ✅ | Azure Monitor ✅ | No |
+| **Auto Scaling** | Read Replicas ✅ | Read Replicas ✅ | No |
+| **SSL/TLS** | Yes ✅ | Yes ✅ | Optional |
+| **Best For** | Production Apps | Enterprise | Development |
+
+### AWS RDS PostgreSQL Provisioning
+
+#### Step 1: Access AWS Management Console
+
+1. **Login** to [AWS Console](https://console.aws.amazon.com)
+2. **Search** for "RDS" in the search bar
+3. **Click** "Amazon RDS" from results
+4. **Select** "Create database" button
+
+#### Step 2: Choose Database Engine
+
+1. **Engine Options:** Select "PostgreSQL"
+2. **Version:** Choose latest (e.g., PostgreSQL 15.2)
+3. **Template:** Select "Free tier" for development, "Production" for production
+4. **Click** "Next" or continue scrolling
+
+#### Step 3: Configure Database Instance
+
+1. **DB Instance Identifier:** `foodontracks-db-prod`
+2. **Master Username:** `postgres` (or custom)
+3. **Master Password:** Generate strong password (25+ characters)
+   - Include: Upper, lower, numbers, symbols (!@#$%^&*)
+   - Example: `Tr@c3R_Food2024_Secure#Key`
+4. **DB Instance Class:** 
+   - Development: `db.t3.micro` (~$17/month)
+   - Production: `db.t3.small` or higher
+5. **Storage:** 
+   - Allocated: 20 GB (minimum)
+   - Enable: "Enable automated backups"
+   - Backup retention: 7 days minimum
+
+#### Step 4: Connectivity Configuration
+
+1. **Compute Resource:** "Don't connect to an EC2 compute resource"
+2. **Virtual Private Cloud (VPC):** Select existing or create new
+3. **DB Subnet Group:** Auto-select or create
+4. **Public Access:** Toggle "Yes" (for testing only)
+   - **Important:** Set to "No" in production with bastion host access
+5. **VPC Security Group:** Create new or select existing
+   - **Inbound Rule:** PostgreSQL (port 5432) from your IP or application security group
+
+#### Step 5: Authentication & Encryption
+
+1. **Database Authentication:** IAM Database Authentication (optional but recommended)
+2. **Enable Encryption:** Toggle "Encryption enabled"
+3. **KMS Key:** Use default or select custom KMS key
+4. **Enable backup encryption:** Yes
+5. **Enable performance insights:** Yes (optional, for monitoring)
+
+#### Step 6: Backup Configuration
+
+1. **Backup Retention Period:** 7 days
+2. **Backup Window:** 03:00-04:00 UTC (off-peak)
+3. **Copy Backups to Another Region:** Enable for disaster recovery
+4. **Backup Destination Region:** Different region from primary
+
+#### Step 7: Maintenance Window
+
+1. **Preferred Maintenance Window:** Sun 04:00-05:00 UTC
+2. **Auto minor version upgrade:** Enable
+3. **Preferred Backup Window:** Before maintenance window
+
+#### Step 8: Create Database
+
+1. Click "Create database" button
+2. **Status:** Will show "Creating..." for 5-10 minutes
+3. **Endpoint:** Available once status shows "Available"
+
+#### Step 9: Retrieve Connection Details
+
+1. **Click** database instance name
+2. **Scroll** to "Connectivity & Security" section
+3. **Note down:**
+   - **Endpoint:** `foodontracks-db-prod.xxxxx.us-east-1.rds.amazonaws.com`
+   - **Port:** `5432`
+   - **Database Name:** `postgres` (default, can rename)
+
+### Azure PostgreSQL Provisioning
+
+#### Step 1: Access Azure Portal
+
+1. **Login** to [Azure Portal](https://portal.azure.com)
+2. **Click** "Create a resource" button
+3. **Search** "Azure Database for PostgreSQL"
+4. **Select** "Azure Database for PostgreSQL - Single Server"
+5. **Click** "Create"
+
+#### Step 2: Configure Basic Settings
+
+1. **Subscription:** Select your subscription
+2. **Resource Group:** Create new (e.g., `foodontracks-rg`) or select existing
+3. **Server Name:** `foodontracks-db-prod`
+4. **Location:** Select region closest to users (e.g., East US)
+5. **PostgreSQL Version:** Latest available (e.g., 13 or 14)
+6. **Compute + Storage:**
+   - **Compute Tier:** General Purpose (B-series for dev, D-series for prod)
+   - **Compute Size:** 1 vCore (development), 2+ vCore (production)
+   - **Storage:** 32 GB minimum
+
+#### Step 3: Administrator Account
+
+1. **Admin Username:** `azureadmin` (or custom)
+2. **Password:** Generate strong password (25+ characters)
+3. **Confirm Password:** Repeat password
+4. **Click** "Next: Networking >"
+
+#### Step 4: Networking Configuration
+
+1. **Connectivity Method:** Public endpoint (for simplicity) or Private Endpoint
+2. **Firewall Rules:**
+   - **Add current client IP:** Auto-populates your IP
+   - **Allow Azure services to access:** Disabled (set to Enabled if needed)
+3. **Virtual Network:** Skip for public endpoint (optional for advanced)
+4. **Subnet Delegation:** Skip (for advanced networking)
+
+#### Step 5: Additional Settings
+
+1. **Backup Retention Days:** 7 days
+2. **Geo-Redundant Backup:** Enable (creates copy in paired region)
+3. **Server Parameters:** Keep defaults
+4. **Tags:** Add environment tag `Environment: Production`
+5. **Click** "Review + create"
+
+#### Step 6: Review and Create
+
+1. **Review** all settings
+2. **Verify** server name, location, compute tier
+3. **Click** "Create" button
+4. **Status:** Will show "Deployment in progress"
+5. **Time to Complete:** 5-10 minutes
+
+#### Step 7: Retrieve Connection Details
+
+1. **Click** notification "Go to resource"
+2. **Server Name:** Shows in Overview panel
+3. **Full FQDN:** `foodontracks-db-prod.postgres.database.azure.com`
+4. **Port:** `5432` (default)
+5. **Admin Username:** Display in Connection Strings
+
+### Environment Configuration
+
+Create `.env.local` file in the `foodontracks/` directory:
+
+**For AWS RDS:**
+```env
+# Database Connection
+DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@foodontracks-db-prod.xxxxx.us-east-1.rds.amazonaws.com:5432/foodontracks"
+
+# AWS Configuration
+AWS_REGION="us-east-1"
+AWS_RDS_ENDPOINT="foodontracks-db-prod.xxxxx.us-east-1.rds.amazonaws.com"
+
+# Connection Pool
+DB_POOL_MAX="20"
+DB_POOL_IDLE_TIMEOUT="30000"
+DB_SSL_ENABLED="true"
+```
+
+**For Azure PostgreSQL:**
+```env
+# Database Connection
+DATABASE_URL="postgresql://azureadmin@foodontracks-db-prod:YOUR_PASSWORD@foodontracks-db-prod.postgres.database.azure.com:5432/postgres"
+
+# Azure Configuration
+AZURE_POSTGRES_SERVER="foodontracks-db-prod.postgres.database.azure.com"
+AZURE_RESOURCE_GROUP="foodontracks-rg"
+
+# Connection Pool
+DB_POOL_MAX="20"
+DB_POOL_IDLE_TIMEOUT="30000"
+DB_SSL_ENABLED="true"
+```
+
+**Security Note:** Never commit `.env.local` to version control. Add to `.gitignore`:
+```
+.env
+.env.local
+.env.*.local
+```
+
+### Testing Database Connectivity
+
+#### Command 1: Automated Test Script
+
+```bash
+# Run comprehensive database tests
+npm run test:db
+
+# Expected Output:
+# ✅ Connection String Format
+# ✅ Basic Connectivity
+# ✅ Database Operations
+# ✅ Connection Pooling
+# ✅ SSL/TLS Connection
+# ✅ Query Performance
+# 📊 Summary: 6/6 tests passed
+```
+
+#### Command 2: Direct psql Connection (AWS RDS)
+
+```bash
+# Install PostgreSQL client tools (if not installed)
+# Windows: https://www.postgresql.org/download/windows/
+# macOS: brew install postgresql
+# Linux: sudo apt-get install postgresql-client
+
+# Connect to AWS RDS
+psql -h foodontracks-db-prod.xxxxx.us-east-1.rds.amazonaws.com -U postgres -d postgres
+
+# Enter password when prompted
+# Expected prompt: postgres=> 
+
+# List databases
+\l
+
+# Connect to foodontracks database
+\c foodontracks
+
+# Run test query
+SELECT NOW();
+
+# Exit
+\q
+```
+
+#### Command 3: Direct psql Connection (Azure PostgreSQL)
+
+```bash
+# Connect to Azure PostgreSQL
+psql -h foodontracks-db-prod.postgres.database.azure.com -U azureadmin@foodontracks-db-prod -d postgres
+
+# Enter password when prompted
+# Expected prompt: postgres=> 
+
+# List databases
+\l
+
+# Exit
+\q
+```
+
+#### Command 4: Node.js Connection Test
+
+Create `test-connection.js`:
+
+```javascript
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  connectionTimeoutMillis: 5000,
+});
+
+async function testConnection() {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    console.log('✅ Connection successful!');
+    console.log('Server time:', result.rows[0].now);
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Connection failed:', error.message);
+    process.exit(1);
+  }
+}
+
+testConnection();
+```
+
+Run test:
+```bash
+node test-connection.js
+```
+
+### Connecting Next.js Application
+
+#### Step 1: Install Prisma Client
+
+```bash
+npm install @prisma/client pg
+npm install -D prisma
+```
+
+#### Step 2: Initialize Prisma
+
+```bash
+npx prisma init
+```
+
+This creates `prisma/schema.prisma` file.
+
+#### Step 3: Update Database Connection
+
+Edit `prisma/.env` (or `.env.local`):
+
+```prisma
+DATABASE_URL="postgresql://user:password@host:5432/database"
+```
+
+#### Step 4: Define Database Schema
+
+Edit `prisma/schema.prisma`:
+
+```prisma
+// prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
+  role  String  @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id    Int     @id @default(autoincrement())
+  userId Int
+  status String @default("pending")
+  total Float
+  user  User    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+
+#### Step 5: Run Migrations
+
+```bash
+# Create and run migration
+npx prisma migrate dev --name init
+
+# In production:
+npx prisma migrate deploy
+```
+
+#### Step 6: Seed Database (Optional)
+
+Create `prisma/seed.ts`:
+
+```typescript
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  await prisma.user.create({
+    data: {
+      email: 'admin@foodontracks.com',
+      name: 'System Admin',
+      role: 'ADMIN',
+    },
+  });
+  console.log('✅ Database seeded!');
+}
+
+main()
+  .catch((error) => {
+    console.error('❌ Seed failed:', error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+```
+
+Run seed:
+```bash
+npx prisma db seed
+```
+
+#### Step 7: Use in API Routes
+
+Example API route `src/app/api/users/route.ts`:
+
+```typescript
+import { PrismaClient } from '@prisma/client';
+import { NextResponse } from 'next/server';
+
+const prisma = new PrismaClient();
+
+export async function GET() {
+  try {
+    const users = await prisma.user.findMany();
+    return NextResponse.json(users);
+  } catch (error) {
+    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+export async function POST(request: Request) {
+  const data = await request.json();
+  
+  try {
+    const user = await prisma.user.create({
+      data,
+    });
+    return NextResponse.json(user, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ error: 'Creation failed' }, { status: 400 });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+```
+
+### Connection Pooling & Resilience
+
+#### Using Database Connection Pool
+
+Use the provided [src/lib/database.ts](foodontracks/src/lib/database.ts) utilities:
+
+```typescript
+import {
+  initializePool,
+  executeQuery,
+  getRow,
+  withTransaction,
+} from '@/lib/database';
+
+// Initialize once at app startup
+initializePool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+});
+
+// Execute queries with automatic retry
+const users = await executeQuery('SELECT * FROM "User"');
+
+// Get single row
+const user = await getRow(
+  'SELECT * FROM "User" WHERE id = $1',
+  [userId]
+);
+
+// Transaction support
+await withTransaction(async (client) => {
+  await client.query('UPDATE "User" SET balance = balance - $1 WHERE id = $2', [amount, userId]);
+  await client.query('INSERT INTO "Transaction" (userId, amount) VALUES ($1, $2)', [userId, amount]);
+});
+```
+
+#### Retry Logic with Exponential Backoff
+
+The `executeQuery` function automatically retries failed queries:
+
+```
+Attempt 1: Immediate
+Attempt 2: 1 second delay
+Attempt 3: 2 seconds delay
+Attempt 4: 4 seconds delay
+```
+
+This handles:
+- Temporary network hiccups
+- Database restarts during updates
+- Connection pool exhaustion
+
+#### Connection Pool Statistics
+
+Monitor pool health:
+
+```typescript
+import { getPoolStats } from '@/lib/database';
+
+const stats = getPoolStats();
+console.log(`Active: ${stats.totalConnectionCount}`);
+console.log(`Idle: ${stats.idleConnectionCount}`);
+console.log(`Waiting: ${stats.waitingRequestCount}`);
+```
+
+### Backup and Disaster Recovery
+
+#### AWS RDS Backup Strategy
+
+**Automated Backups:**
+- **Retention:** 7 days (default, can extend to 35 days)
+- **Frequency:** Daily at scheduled backup window
+- **Type:** Incremental after first full backup
+- **Storage:** Included in RDS costs
+
+**Manual Snapshots:**
+```bash
+# AWS CLI command
+aws rds create-db-snapshot \
+  --db-instance-identifier foodontracks-db-prod \
+  --db-snapshot-identifier foodontracks-db-backup-2024-01-15
+
+# Verify
+aws rds describe-db-snapshots --db-snapshot-identifier foodontracks-db-backup-2024-01-15
+```
+
+**Point-in-Time Recovery:**
+```bash
+# Restore to specific timestamp
+aws rds restore-db-instance-from-db-snapshot \
+  --db-instance-identifier foodontracks-db-restored \
+  --db-snapshot-identifier foodontracks-db-backup-2024-01-15 \
+  --restore-time 2024-01-15T14:30:00Z
+```
+
+#### Azure PostgreSQL Backup Strategy
+
+**Automated Backups:**
+- **Retention:** 7-35 days (configurable)
+- **Frequency:** Daily full backup + transaction logs
+- **Geo-Redundancy:** Optional cross-region copies
+- **PITR Window:** Last 7 days of backup
+
+**Manual Backup:**
+Through Azure Portal → Server → Backups → Create Backup
+
+**Point-in-Time Recovery:**
+Through Azure Portal → Server → Backups → Restore
+
+#### Backup Schedule Recommendation
+
+```
+Daily Backups:    Automatic (24-hour retention)
+Weekly Snapshots: Manual every Sunday (7 copies)
+Monthly Archive:  Manual first of month (12 copies)
+Long-term:        Quarterly copies to separate storage
+```
+
+### Monitoring and Alerts
+
+#### AWS CloudWatch Metrics
+
+Monitor these key metrics:
+
+| Metric | Threshold | Alert |
+|--------|-----------|-------|
+| **CPU Utilization** | > 80% | Scale up instance |
+| **Database Connections** | > 80 of max | Increase pool size |
+| **Disk Space** | < 10% free | Increase allocated storage |
+| **Read Latency** | > 100ms | Investigate slow queries |
+| **Write Latency** | > 100ms | Check network/storage |
+
+**Set up CloudWatch Alarm:**
+
+```bash
+aws cloudwatch put-metric-alarm \
+  --alarm-name foodontracks-cpu-high \
+  --alarm-description "Alert when CPU exceeds 80%" \
+  --metric-name CPUUtilization \
+  --namespace AWS/RDS \
+  --statistic Average \
+  --period 300 \
+  --threshold 80 \
+  --comparison-operator GreaterThanThreshold \
+  --dimensions Name=DBInstanceIdentifier,Value=foodontracks-db-prod \
+  --alarm-actions arn:aws:sns:region:account-id:topic-name
+```
+
+#### Azure Monitor Alerts
+
+1. **Navigate** to Azure Portal → Your PostgreSQL Server
+2. **Click** "Alerts" → "Create alert rule"
+3. **Condition:** Select metric (CPU, Connections, Storage)
+4. **Threshold:** Define warning level
+5. **Action Group:** Select email notification
+
+**Recommended Alert Rules:**
+- CPU Usage > 80%
+- Failed Connections > 10/hour
+- Storage Free < 10%
+- Connection Count > 80% of max
+
+### Performance Optimization
+
+#### Query Optimization
+
+```sql
+-- ❌ Bad: Full table scan
+SELECT * FROM orders WHERE customer_name = 'John';
+
+-- ✅ Good: Use indexed column
+SELECT * FROM orders WHERE customer_id = 123;
+
+-- ❌ Bad: Function in WHERE clause
+SELECT * FROM orders WHERE YEAR(created_at) = 2024;
+
+-- ✅ Good: Date range
+SELECT * FROM orders WHERE created_at >= '2024-01-01' AND created_at < '2025-01-01';
+```
+
+#### Index Strategy
+
+```sql
+-- Create indexes on frequently filtered columns
+CREATE INDEX idx_user_email ON "User"(email);
+CREATE INDEX idx_order_customer ON "Order"(customer_id);
+CREATE INDEX idx_order_created ON "Order"(created_at DESC);
+
+-- Composite index for common queries
+CREATE INDEX idx_order_lookup ON "Order"(customer_id, status, created_at DESC);
+
+-- View slow queries
+SELECT query, mean_time FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10;
+```
+
+#### Connection Pool Tuning
+
+```env
+# Development (local testing)
+DB_POOL_MAX="5"
+DB_POOL_IDLE_TIMEOUT="30000"
+
+# Production (high traffic)
+DB_POOL_MAX="20"
+DB_POOL_IDLE_TIMEOUT="30000"
+DB_CONNECTION_TIMEOUT="5000"
+```
+
+### Cost Estimation
+
+#### AWS RDS (db.t3.micro, 20GB storage)
+- **Instance:** $17.30/month
+- **Storage:** $2.00/month (20GB × $0.10/GB)
+- **Backups:** Included
+- **Data Transfer:** $0.00/month (within region)
+- **Total:** ~$19.30/month
+
+#### Azure PostgreSQL (1 vCore, 32GB)
+- **Compute:** $25.12/month
+- **Storage:** Included
+- **Backup:** Included (7 days)
+- **Geo-Redundant:** +$31.40/month (optional)
+- **Total:** ~$25.12/month (or $56.52 with geo-redundancy)
+
+#### Cost Optimization Tips
+
+1. **Use Reserved Instances:** 1-year: 31% discount, 3-year: 62% discount
+2. **Auto-Scaling:** Scale down during off-hours
+3. **Read Replicas:** Only for high-load scenarios
+4. **Monitoring:** AWS Compute Optimizer recommends right-sizing
+5. **Storage:** Monitor and remove old backups
+
+### Production Deployment Checklist
+
+- [ ] Database provisioned and accessible
+- [ ] `.env.local` configured with connection string
+- [ ] SSL/TLS encryption enabled
+- [ ] Security groups/firewall restricting access
+- [ ] Automated backups configured (7+ day retention)
+- [ ] Backup copies to different region enabled
+- [ ] Point-in-time recovery tested
+- [ ] Monitoring and alerts configured
+- [ ] Database user with minimal required permissions created
+- [ ] Database seeded with initial data
+- [ ] Slow query log enabled
+- [ ] Connection pooling configured (max 20 connections)
+
+### Common Troubleshooting
+
+#### Connection Timeout
+
+**Symptom:** `Error: connection timeout`
+
+**Solutions:**
+1. **Check Security Groups/Firewall:** Allow your app's IP
+   ```bash
+   # AWS: https://console.aws.amazon.com/rds → Security Groups
+   # Azure: https://portal.azure.com → Firewall rules
+   ```
+
+2. **Verify Connection String:**
+   ```bash
+   # Print connection string (mask password)
+   echo $DATABASE_URL | sed 's/:.*@/@/g'
+   ```
+
+3. **Test Network Connectivity:**
+   ```bash
+   # Test port connectivity
+   telnet host 5432
+   # or
+   nc -zv host 5432
+   ```
+
+#### Too Many Connections
+
+**Symptom:** `FATAL: sorry, too many clients already`
+
+**Solutions:**
+1. **Increase Pool Max:** Edit `.env.local` `DB_POOL_MAX`
+2. **Reduce Idle Timeout:** Lower `DB_POOL_IDLE_TIMEOUT` to close stale connections
+3. **Scale Database:** Upgrade instance type (allows more connections)
+4. **Use PgBouncer:** Connection pooler for additional optimization
+
+#### SSL Certificate Error
+
+**Symptom:** `Error: SELF_SIGNED_CERT_IN_CHAIN`
+
+**Solutions:**
+1. **Disable Validation (Dev Only):**
+   ```env
+   DB_SSL_REJECT_UNAUTHORIZED="false"
+   ```
+
+2. **Use RDS CA Certificate (Prod):**
+   ```bash
+   # Download AWS RDS certificate
+   wget https://truststore.pki.rds.amazonaws.com/rds-ca-2019-root.pem
+   
+   # Use in connection
+   const pool = new Pool({
+     ssl: {
+       ca: fs.readFileSync('rds-ca-2019-root.pem').toString(),
+       rejectUnauthorized: true,
+     },
+   });
+   ```
+
+3. **Azure Certificate:**
+   - Download from: https://dl.cacerts.digicert.com/DigiCertGlobalRootCA.crt.pem
+   - Use same pattern as AWS
+
+### Disaster Recovery Plan
+
+#### Recovery Time Objective (RTO): 15 minutes
+#### Recovery Point Objective (RPO): 1 hour
+
+**Steps:**
+1. **Detect Failure** (2 min)
+   - CloudWatch/Azure Monitor alert triggers
+   - Team notified via SMS/Email
+
+2. **Assess Damage** (3 min)
+   - Check database status in console
+   - Review error logs
+
+3. **Initiate Recovery** (5 min)
+   - Failover to backup in same region (automatic if Multi-AZ)
+   - Or restore from snapshot to new instance
+
+4. **Update Connection** (3 min)
+   - Update DNS or environment variables
+   - Verify application connectivity
+
+5. **Post-Recovery** (2 min)
+   - Run database checks
+   - Monitor for issues
+   - Document incident
+
+#### Tested Recovery Procedure
+
+1. **Monthly Test:** Restore backup to test environment
+2. **Verify:** Run integration tests against restored database
+3. **Document:** Record recovery time and any issues
+4. **Improve:** Update runbooks based on learnings
+
+### Reflection
+
+#### Managed Database Trade-offs
+
+| Aspect | Self-Hosted | Managed (RDS/Azure) |
+|--------|-------------|-------------------|
+| **Cost** | Lower hardware | Higher monthly fee |
+| **Management** | Full responsibility | AWS/Azure handles |
+| **Uptime** | Depends on you | 99.95% SLA |
+| **Scaling** | Manual setup | One-click scaling |
+| **Backups** | Manual scripts | Automatic, tested |
+| **Security** | Your infrastructure | Cloud provider standards |
+| **Compliance** | GDPR, HIPAA, SOC 2 | Built-in certifications |
+
+**FoodONtracks Recommendation:** Use managed databases in production for reliability, and local PostgreSQL for development to avoid unnecessary costs.
+
+---
+
 

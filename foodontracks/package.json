@@ -14,7 +14,8 @@
     "db:reset": "prisma migrate reset",
     "test:auth": "tsx scripts/auth_test.ts",
     "test:auth-middleware": "tsx scripts/auth_middleware_test.ts",
-    "test:security": "tsx scripts/test-security-headers.ts"
+    "test:security": "tsx scripts/test-security-headers.ts",
+    "test:db": "tsx scripts/test-db-connection.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
