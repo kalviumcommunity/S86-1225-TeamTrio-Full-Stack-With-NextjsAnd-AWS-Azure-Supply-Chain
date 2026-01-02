@@ -50,6 +50,8 @@ RUN addgroup --system --gid 1001 nodejs && \
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
+ENV NEXT_PUBLIC_APP_URL=https://foodontracks.local
+ENV NEXT_PUBLIC_API_URL=https://api.foodontracks.local
 
 # Copy necessary files from builder
 COPY --from=builder /app/next.config.* ./
@@ -64,11 +66,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy node_modules (including Prisma Client)
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
+# Create directory for SSL certificates (will be mounted as volume)
+RUN mkdir -p /app/certs
+
 # Switch to non-root user
 USER nextjs
 
-# Expose port
-EXPOSE 3000
+# Expose ports (3000 for HTTP, 443 for HTTPS)
+EXPOSE 3000 443
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \

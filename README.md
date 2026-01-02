@@ -3386,4 +3386,877 @@ DB_CONNECTION_TIMEOUT="5000"
 
 ---
 
+## 🌐 Custom Domain & HTTPS Configuration
+
+### Overview
+
+FoodONtracks supports secure HTTPS connections with custom domain configuration through AWS Route 53 (DNS) and Azure DNS. SSL certificates are provisioned via AWS Certificate Manager (ACM) or Azure App Service Certificates, ensuring encrypted communication and building user trust.
+
+**Key Security Features:**
+- ✅ Custom domain configuration (Route 53 or Azure DNS)
+- ✅ SSL/TLS certificates (AWS ACM or Azure Certificates)
+- ✅ HTTPS-only enforcement (HTTP → HTTPS redirects)
+- ✅ Security headers (HSTS, CSP, X-Frame-Options)
+- ✅ Automatic certificate renewal
+- ✅ Green padlock icon 🔒 in browser
+
+### Why HTTPS & Custom Domain Matter
+
+| Benefit | Impact |
+|---------|--------|
+| **Data Encryption** | All traffic encrypted between user and server |
+| **Trust Indicators** | Green padlock increases user confidence |
+| **SEO Ranking** | Google prioritizes HTTPS sites |
+| **Compliance** | Required for GDPR, PCI-DSS, healthcare apps |
+| **Phishing Prevention** | Harder for attackers to impersonate your domain |
+| **Business Credibility** | Professional appearance with custom domain |
+
+### Component Architecture
+
+```
+User Browser
+    ↓
+HTTP Request (port 80)
+    ↓
+[Load Balancer / Application]
+    ↓
+HTTP → HTTPS Redirect (301/308)
+    ↓
+HTTPS Request (port 443)
+    ↓
+[SSL/TLS Handshake]
+    ↓
+[Certificate Validation]
+    ↓
+Secure Connection ✅
+    ↓
+Application Response (encrypted)
+    ↓
+User Browser (Green Padlock 🔒)
+```
+
+### Step 1: Register or Connect Your Domain
+
+#### Option A: Register with Domain Registrar
+
+Choose your domain registrar:
+- **GoDaddy** - https://www.godaddy.com
+- **Namecheap** - https://www.namecheap.com
+- **Google Domains** - https://domains.google
+- **AWS Route 53** - Direct registration (https://console.aws.amazon.com/route53)
+- **Azure Domains** - Through Azure Marketplace
+
+**Steps:**
+1. Search for your domain (e.g., `foodontracks.com`)
+2. Add to cart and complete purchase
+3. Complete domain registration
+4. Access domain settings in registrar's control panel
+
+#### Option B: Transfer Existing Domain
+
+If you already own a domain with another registrar:
+
+1. **Get Authorization Code** from current registrar
+2. **Initiate Transfer** with new registrar (AWS Route 53 or Azure)
+3. **Update Nameservers** to point to your cloud provider
+4. **Wait 24-48 hours** for DNS propagation
+
+### Step 2: Create Hosted Zone (DNS)
+
+#### AWS Route 53 - Create Hosted Zone
+
+**Via AWS Console:**
+1. Navigate to **Route 53** → **Hosted Zones**
+2. Click **Create Hosted Zone**
+3. Enter **Domain Name:** `foodontracks.local` (or your domain)
+4. Click **Create Hosted Zone**
+5. **Copy the 4 nameservers** provided by Route 53
+6. Add these nameservers to your **domain registrar settings**
+
+**Via AWS CLI:**
+```powershell
+aws route53 create-hosted-zone `
+  --name foodontracks.local `
+  --caller-reference $(New-Guid).Guid
+
+# Output shows:
+# NameServers: [
+#   "ns-123.awsdns-45.com",
+#   "ns-678.awsdns-90.com",
+#   "ns-901.awsdns-34.com",
+#   "ns-567.awsdns-78.com"
+# ]
+```
+
+#### Azure DNS - Create DNS Zone
+
+**Via Azure Portal:**
+1. Navigate to **Azure DNS Zones**
+2. Click **+ Create**
+3. **Resource Group:** Select or create
+4. **Name:** `foodontracks.local`
+5. Click **Create**
+6. **Copy Azure nameservers** from Overview
+7. Update nameservers in **domain registrar**
+
+**Via Azure CLI:**
+```powershell
+az network dns zone create `
+  --resource-group foodontracks-rg `
+  --name foodontracks.local
+
+# Get nameservers
+az network dns zone show `
+  --resource-group foodontracks-rg `
+  --name foodontracks.local `
+  --query nameServers
+```
+
+### Step 3: Configure DNS Records
+
+#### Create A Record (Root Domain)
+
+Maps your domain to your application's IP or Load Balancer.
+
+**AWS Route 53:**
+1. Select your **Hosted Zone**
+2. Click **Create Record**
+3. **Name:** Leave blank (for root domain) or enter subdomain
+4. **Type:** A (IPv4 address)
+5. **Value:** Your Load Balancer DNS name or IP
+   ```
+   Example: myapp-lb-123.us-east-1.elb.amazonaws.com
+   ```
+6. **Alias:** Yes (if using AWS Load Balancer)
+7. Click **Create Record**
+
+**Azure DNS:**
+```powershell
+az network dns record-set a add-record `
+  --resource-group foodontracks-rg `
+  --zone-name foodontracks.local `
+  --record-set-name "@" `
+  --ipv4-address 203.0.113.25
+```
+
+#### Create CNAME Record (WWW Subdomain)
+
+Maps `www.foodontracks.local` to root domain.
+
+**AWS Route 53:**
+1. Click **Create Record**
+2. **Name:** www
+3. **Type:** CNAME
+4. **Value:** foodontracks.local
+5. Click **Create Record**
+
+**Azure DNS:**
+```powershell
+az network dns record-set cname create `
+  --resource-group foodontracks-rg `
+  --zone-name foodontracks.local `
+  --name www `
+  --target-resource foodontracks.local
+```
+
+#### Create MX Records (Email - Optional)
+
+If using email service with your domain:
+
+**AWS Route 53:**
+1. Click **Create Record**
+2. **Type:** MX
+3. **Value:** Your email provider's MX records
+   ```
+   10 mail.foodontracks.local
+   20 mail2.foodontracks.local (backup)
+   ```
+4. Click **Create Record**
+
+### Step 4: Request SSL Certificate
+
+#### AWS Certificate Manager (ACM) - Recommended
+
+**Via AWS Console:**
+1. Navigate to **AWS Certificate Manager**
+2. Click **Request a Certificate**
+3. **Certificate Type:** Public Certificate
+4. **Domain Names:** 
+   ```
+   foodontracks.local
+   www.foodontracks.local
+   *.foodontracks.local (wildcard for all subdomains)
+   ```
+5. **Validation Method:** Select **DNS Validation** (preferred - automatic)
+6. Click **Request**
+7. **CNAME Validation Records:** AWS shows CNAME records to add to Route 53
+8. Click **Create records in Route 53** (automatic)
+9. **Status:** Changes to "Issued" in 5-30 minutes
+
+**Via AWS CLI:**
+```powershell
+aws acm request-certificate `
+  --domain-name foodontracks.local `
+  --subject-alternative-names www.foodontracks.local `
+  --validation-method DNS `
+  --region us-east-1
+
+# Output: CertificateArn = arn:aws:acm:us-east-1:123456789:certificate/xxxxx
+```
+
+#### Azure App Service Certificates
+
+**Via Azure Portal:**
+1. Navigate to your **App Service**
+2. Select **TLS/SSL Settings**
+3. Click **Create App Service Managed Certificate**
+4. Select your **Custom Domain**
+5. Click **Create**
+6. **Certificate Status:** Creating (5-10 minutes)
+7. Once **Issued**, bind to domain
+
+**Via Azure CLI:**
+```powershell
+az webapp config ssl create `
+  --resource-group foodontracks-rg `
+  --name foodontracks-app `
+  --certificate-name foodontracks-cert
+
+# Bind certificate
+az webapp config ssl bind `
+  --resource-group foodontracks-rg `
+  --name foodontracks-app `
+  --certificate-thumbprint <thumbprint>
+```
+
+#### Self-Signed Certificate (Local Testing Only)
+
+**⚠️ WARNING: Only for local development. Not secure for production.**
+
+```powershell
+# Generate self-signed certificate
+$cert = New-SelfSignedCertificate `
+  -DnsName "foodontracks.local", "www.foodontracks.local" `
+  -FriendlyName "FoodONtracks Dev" `
+  -NotAfter (Get-Date).AddYears(1) `
+  -CertStoreLocation cert:\CurrentUser\My
+
+# Export as PFX file
+$password = ConvertTo-SecureString "DevPassword123!" -AsPlainText -Force
+Export-PfxCertificate -Cert $cert -FilePath foodontracks.pfx -Password $password
+
+# Output: Certificate saved to foodontracks.pfx
+```
+
+### Step 5: Enable HTTPS Enforcement
+
+#### Next.js Configuration
+
+Update [next.config.js](foodontracks/next.config.js) to redirect HTTP → HTTPS:
+
+```javascript
+module.exports = {
+  async redirects() {
+    return [
+      {
+        source: '/(.*)',
+        has: [{ type: 'header', key: 'x-forwarded-proto', value: 'http' }],
+        destination: 'https://:host/:path*',
+        permanent: true,
+      },
+    ];
+  },
+
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          // Enforce HTTPS in browser
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload',
+          },
+          // Prevent MIME-type sniffing
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Prevent clickjacking
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          // Enable XSS protection
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          // Control referrer information
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+        ],
+      },
+    ];
+  },
+
+  env: {
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://foodontracks.local',
+  },
+};
+```
+
+#### AWS Load Balancer - Listener Rule
+
+**Via AWS Console:**
+1. Navigate to **EC2** → **Load Balancers**
+2. Select your **Load Balancer**
+3. Click **Listeners** tab
+4. **Port 80 (HTTP)** listener → Click **Edit**
+5. **Rule:** Add default redirect
+6. **Action Type:** Redirect
+7. **Protocol:** HTTPS
+8. **Port:** 443
+9. **Status Code:** 301 (Permanent)
+10. Click **Update**
+
+**Via AWS CLI:**
+```powershell
+aws elbv2 modify-listener `
+  --load-balancer-arn <your-lb-arn> `
+  --listener-arn <your-listener-arn> `
+  --default-actions Type=redirect,RedirectConfig='{Protocol=HTTPS,Port=443,StatusCode=HTTP_301}'
+```
+
+#### Azure App Service - HTTPS Only
+
+**Via Azure Portal:**
+1. Navigate to your **App Service**
+2. Select **Configuration** → **General Settings**
+3. Toggle **HTTPS Only** to **ON**
+4. Click **Save**
+
+**Via Azure CLI:**
+```powershell
+az webapp update `
+  --resource-group foodontracks-rg `
+  --name foodontracks-app `
+  --set httpsOnly=true
+```
+
+### Step 6: Deploy Setup Scripts
+
+FoodONtracks includes three automated setup scripts for complete domain and HTTPS configuration.
+
+#### Script 1: Domain & DNS Setup
+
+**File:** [foodontracks/setup-domain-dns.ps1](foodontracks/setup-domain-dns.ps1)
+
+**Purpose:** Configure Route 53 or Azure DNS with your domain
+
+**Usage:**
+```powershell
+# AWS Route 53
+.\foodontracks\setup-domain-dns.ps1 -Domain "foodontracks.local" -Provider "AWS"
+
+# Azure DNS
+.\foodontracks\setup-domain-dns.ps1 -Domain "foodontracks.local" -Provider "Azure"
+```
+
+**What It Does:**
+- ✅ Validates domain format
+- ✅ Creates hosted zone (Route 53 or Azure DNS)
+- ✅ Displays nameservers to add at registrar
+- ✅ Creates A record for root domain
+- ✅ Creates CNAME record for www subdomain
+- ✅ Updates local hosts file (optional)
+
+**Example Output:**
+```
+=== Domain & DNS Configuration Setup ===
+Domain: foodontracks.local
+Provider: AWS
+
+✓ Domain format is valid: foodontracks.local
+✓ AWS CLI found
+✓ AWS authenticated as: arn:aws:iam::123456789:root
+
+Creating Route 53 Hosted Zone for foodontracks.local...
+✓ Hosted Zone created: Z1234567890ABC
+
+NS Records to add at your registrar:
+  ns-1234.awsdns-56.com
+  ns-7890.awsdns-12.com
+  ns-3456.awsdns-78.com
+  ns-9012.awsdns-34.com
+
+✓ A record created
+✓ CNAME record created
+
+=== Domain Setup Complete ===
+Hosted Zone ID: Z1234567890ABC
+Next steps:
+1. Add nameservers to your domain registrar
+2. Wait 24-48 hours for DNS propagation
+3. Run './setup-ssl-certificate.ps1' to configure SSL
+4. Run './test-https.ps1' to verify HTTPS setup
+```
+
+#### Script 2: SSL Certificate Setup
+
+**File:** [foodontracks/setup-ssl-certificate.ps1](foodontracks/setup-ssl-certificate.ps1)
+
+**Purpose:** Request and configure SSL certificates
+
+**Usage:**
+```powershell
+# AWS Certificate Manager
+.\foodontracks\setup-ssl-certificate.ps1 -Domain "foodontracks.local" -Provider "AWS"
+
+# Azure App Service Certificates
+.\foodontracks\setup-ssl-certificate.ps1 -Domain "foodontracks.local" -Provider "Azure"
+```
+
+**What It Does:**
+- ✅ Validates domain DNS resolution
+- ✅ Requests certificate from ACM or Azure
+- ✅ Performs DNS validation automatically
+- ✅ Waits for certificate issuance
+- ✅ Can generate self-signed cert for testing
+- ✅ Displays certificate information and best practices
+
+**Example Output:**
+```
+=== SSL Certificate Setup ===
+Domain: foodontracks.local
+Provider: AWS
+
+Validating domain DNS resolution...
+✓ Domain resolves to: 203.0.113.25
+
+=== AWS Certificate Manager (ACM) Setup ===
+✓ AWS CLI found
+✓ AWS authenticated as: arn:aws:iam::123456789:root
+
+Requesting new certificate for foodontracks.local...
+This certificate will also cover www.foodontracks.local
+
+✓ Certificate requested: arn:aws:acm:us-east-1:123456789:certificate/xxxxx
+
+Certificate Status: PENDING_VALIDATION
+
+Next steps:
+1. Go to AWS ACM Console: https://console.aws.amazon.com/acm
+2. Select the certificate for foodontracks.local
+3. Copy the CNAME validation records
+4. Add them to your Route 53 hosted zone
+5. Wait for status to change to ISSUED (usually 5-30 minutes)
+```
+
+#### Script 3: HTTPS Verification
+
+**File:** [foodontracks/test-https.ps1](foodontracks/test-https.ps1)
+
+**Purpose:** Comprehensive HTTPS configuration testing
+
+**Usage:**
+```powershell
+# Test against your domain
+.\foodontracks\test-https.ps1 -URL "https://foodontracks.local"
+
+# Test against specific URL
+.\foodontracks\test-https.ps1 -URL "https://app.example.com"
+
+# Test self-signed certificate (skip validation)
+.\foodontracks\test-https.ps1 -URL "https://localhost:443" -SkipCertificateValidation
+```
+
+**What It Does:**
+- ✅ Validates URL format
+- ✅ Tests DNS resolution
+- ✅ Verifies HTTPS connectivity
+- ✅ Inspects SSL certificate details
+- ✅ Checks security headers presence
+- ✅ Tests HTTP → HTTPS redirect
+- ✅ Shows SSL Labs score link
+- ✅ Provides browser verification steps
+
+**Example Output:**
+```
+=== HTTPS Configuration Testing ===
+Testing URL: https://foodontracks.local
+
+Validating URL format...
+✓ Valid URL format: https://foodontracks.local
+
+Testing DNS resolution...
+✓ DNS resolves: foodontracks.local -> 203.0.113.25
+
+Testing HTTPS connectivity...
+✓ HTTPS connection successful
+  Status Code: 200
+  Content Length: 5432 bytes
+
+Testing SSL Certificate...
+✓ SSL Certificate retrieved
+
+Certificate Details:
+  Subject: CN=foodontracks.local
+  Issuer: CN=Amazon RSA 2048 M03
+  Valid From: 12/17/2024
+  Valid Until: 12/17/2025
+  Expires in: 365 days
+  ✓ Certificate is valid
+
+Testing Security Headers...
+✓ Response headers received
+
+✓ Strict-Transport-Security
+  Value: max-age=31536000; includeSubDomains; preload
+
+✓ X-Content-Type-Options
+  Value: nosniff
+
+✓ X-Frame-Options
+  Value: SAMEORIGIN
+
+✓ X-XSS-Protection
+  Value: 1; mode=block
+
+Security Headers Summary:
+  Present: 6 / 7
+  Status: ⚠ Some security headers missing
+
+Testing HTTP to HTTPS redirect...
+✓ HTTP redirect is active
+  Redirects to: https://foodontracks.local/
+
+=== Test Summary ===
+DNS Resolution: ✓ OK
+HTTPS Connectivity: ✓ OK
+
+=== Manual Browser Verification Steps ===
+
+1. Open your browser and navigate to: https://foodontracks.local
+2. Look for the green padlock icon 🔒 in the address bar
+3. Click on the padlock icon to view certificate details...
+```
+
+### Step 7: Verify HTTPS in Browser
+
+**Step 1:** Open your browser and navigate to your domain
+```
+https://foodontracks.local
+```
+
+**Step 2:** Check for green padlock 🔒 in address bar
+```
+✅ Green padlock present = Secure connection
+❌ Warning icon = Certificate issue
+```
+
+**Step 3:** Click padlock to view certificate
+
+**Chrome/Edge:**
+```
+Padlock Icon → "Connection is secure" 
+            → "Certificate (Valid)"
+```
+
+**Firefox:**
+```
+Padlock Icon → "Connection Secure" 
+            → "View Certificate"
+```
+
+**Step 4:** Inspect security in DevTools (F12)
+
+**Network Tab:**
+- **Protocol:** Should show `h2` (HTTP/2) or `https`
+- **Mixed Content:** Should show none
+- **Secure Cookies:** HttpOnly, Secure, SameSite
+
+**Security Tab:**
+- **Connection:** Secure
+- **Certificate:** Valid
+- **TLS Version:** 1.2+ (1.3 preferred)
+- **Cipher:** Strong (TLS_AES_256_GCM_SHA384)
+
+### Step 8: Test via SSL Labs
+
+**Visit:** https://www.ssllabs.com/ssltest/?d=foodontracks.local
+
+**What You'll See:**
+```
+Overall Rating: A+ (Excellent)
+
+Certificate:
+  ✓ Valid
+  ✓ Trusted
+  ✓ Chain complete
+
+Protocol Support:
+  ✓ TLS 1.3
+  ✓ TLS 1.2
+  ⚠ TLS 1.1 (deprecated, disable)
+
+Key Exchange:
+  ✓ Strong (ECDHE)
+
+Cipher Strength:
+  ✓ 128 bits
+  ✓ 256 bits
+
+Handshake Simulation:
+  ✓ Chrome - Success
+  ✓ Firefox - Success
+  ✓ Safari - Success
+```
+
+### Complete Setup Workflow
+
+```
+1. DOMAIN REGISTRATION (5 min)
+   ↓
+2. CREATE HOSTED ZONE (2 min)
+   ↓
+3. UPDATE NAMESERVERS (5 min)
+   ↓
+4. WAIT FOR PROPAGATION (24-48 hours)
+   ↓
+5. REQUEST SSL CERTIFICATE (5 min)
+   ↓
+6. VALIDATE CERTIFICATE (5-30 min)
+   ↓
+7. ENABLE HTTPS ENFORCEMENT (10 min)
+   ↓
+8. TEST IN BROWSER (5 min)
+   ↓
+✅ HTTPS ENABLED
+```
+
+### Running the Setup Scripts
+
+**Complete Setup Command:**
+```powershell
+# 1. Setup domain and DNS
+.\foodontracks\setup-domain-dns.ps1 -Domain "foodontracks.local" -Provider "AWS"
+
+# 2. Request SSL certificate
+.\foodontracks\setup-ssl-certificate.ps1 -Domain "foodontracks.local" -Provider "AWS"
+
+# 3. Test HTTPS configuration
+.\foodontracks\test-https.ps1 -URL "https://foodontracks.local"
+```
+
+### Testing & Verification Summary
+
+**Automated Tests:**
+- ✅ `setup-domain-dns.ps1` validates DNS configuration
+- ✅ `setup-ssl-certificate.ps1` verifies certificate issuance
+- ✅ `test-https.ps1` comprehensive HTTPS testing
+
+**Manual Verification:**
+- ✅ Browser shows green padlock 🔒
+- ✅ DevTools shows TLS 1.2+ connection
+- ✅ Security headers present in response
+- ✅ HTTP → HTTPS redirect working
+- ✅ No mixed content warnings
+
+**Browser Verification Checklist:**
+- [ ] Green padlock icon visible
+- [ ] URL shows https:// (not http://)
+- [ ] Certificate is valid (not expired)
+- [ ] No "Not Secure" warning
+- [ ] No mixed content warnings
+- [ ] All resources load securely
+
+### Docker & Deployment Integration
+
+**Docker Compose Updates:**
+- Port 443 exposed for HTTPS
+- SSL certificates mounted as volume
+- Environment variables configured for HTTPS URLs
+
+```yaml
+app:
+  ports:
+    - "443:443"  # HTTPS port
+  environment:
+    NEXT_PUBLIC_APP_URL=https://foodontracks.local
+    NEXT_PUBLIC_API_URL=https://api.foodontracks.local
+  volumes:
+    - ./certs:/app/certs:ro  # SSL certificates
+```
+
+**Dockerfile Updates:**
+- HTTPS port (443) exposed
+- SSL certificate directory created
+- Environment variables for HTTPS URLs
+
+```dockerfile
+ENV NEXT_PUBLIC_APP_URL=https://foodontracks.local
+EXPOSE 3000 443
+```
+
+### Environment Variables for HTTPS
+
+Add to `.env.local`:
+```env
+# Domain Configuration
+NEXT_PUBLIC_APP_URL=https://foodontracks.local
+NEXT_PUBLIC_API_URL=https://api.foodontracks.local
+DOMAIN=foodontracks.local
+
+# SSL Certificate Paths (for custom server setup)
+SSL_CERT_PATH=/app/certs/certificate.crt
+SSL_KEY_PATH=/app/certs/private.key
+
+# Security Headers
+ENABLE_HSTS=true
+HSTS_MAX_AGE=31536000
+```
+
+### Troubleshooting Common Issues
+
+#### DNS Not Resolving
+
+**Problem:** Domain doesn't resolve after 24 hours
+
+**Solutions:**
+1. **Verify nameservers updated at registrar:**
+   ```powershell
+   nslookup -type=NS foodontracks.local
+   ```
+
+2. **Check Route 53 nameservers:**
+   - AWS Console → Route 53 → Hosted Zones → Select zone
+   - Copy the 4 nameservers
+
+3. **Compare and update registrar:**
+   - Log into domain registrar
+   - Update nameserver settings with Route 53 nameservers
+   - Allow 24-48 hours for propagation
+
+4. **Clear DNS cache:**
+   ```powershell
+   ipconfig /flushdns
+   ```
+
+#### Certificate Not Issued
+
+**Problem:** Certificate status stuck on "PENDING_VALIDATION"
+
+**Solutions:**
+1. **Check validation records added:**
+   - AWS Console → Route 53 → Hosted Zone
+   - Verify CNAME validation record exists
+
+2. **Manually add validation record:**
+   - AWS ACM Console → Certificate → Details
+   - Copy CNAME Name and CNAME Value
+   - Route 53 → Create Record → Add CNAME record
+
+3. **Wait for validation:**
+   - Usually completes in 5-30 minutes
+   - Check status: `aws acm describe-certificate --certificate-arn <arn>`
+
+#### HTTPS Connection Failed
+
+**Problem:** Browser shows "Not Secure" or connection error
+
+**Solutions:**
+1. **Verify certificate attached to load balancer:**
+   - AWS Console → Load Balancer → Listeners
+   - Port 443 listener should have certificate selected
+
+2. **Check security group rules:**
+   - Inbound rule for port 443 (HTTPS) should exist
+   - Source should allow public access: `0.0.0.0/0`
+
+3. **Test connectivity:**
+   ```powershell
+   # Test SSL connection
+   [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+   Invoke-WebRequest -Uri "https://foodontracks.local" -SkipCertificateValidation
+   ```
+
+#### Self-Signed Certificate Warning
+
+**Problem:** Browser warns about untrusted certificate
+
+**Expected for self-signed certs (development only):**
+1. Click "Advanced" → "Proceed anyway"
+2. Certificate is still secure for that session
+3. Use real certificate from CA for production
+
+**To eliminate warning:**
+- Request certificate from AWS ACM or Azure App Service (free)
+- Never use self-signed certs in production
+
+### Performance Optimization
+
+**HTTPS Performance Tips:**
+1. **Enable HTTP/2:** Multiplexing improves performance
+2. **Use TLS 1.3:** Faster handshake than TLS 1.2
+3. **Enable OCSP Stapling:** Reduces certificate validation time
+4. **Use CDN:** Cloudfront (AWS) or Azure CDN for edge caching
+5. **Compress Responses:** gzip compression for text assets
+
+### Reflection
+
+#### Security Layers Implemented
+
+**Layer 1: DNS**
+- Protects against DNS spoofing and hijacking
+- Ensures users connect to correct IP address
+
+**Layer 2: HTTPS/TLS**
+- Encrypts data in transit
+- Prevents man-in-the-middle attacks
+- Authenticates server to client
+
+**Layer 3: Security Headers**
+- HSTS forces HTTPS-only connections
+- CSP prevents XSS attacks
+- X-Frame-Options prevents clickjacking
+
+**Layer 4: Certificate Validation**
+- Browser verifies certificate is from trusted CA
+- Prevents users from trusting forged certificates
+
+#### Production Readiness Checklist
+
+- [ ] Domain registered and nameservers updated
+- [ ] Hosted zone created (Route 53 or Azure DNS)
+- [ ] A record pointing to load balancer
+- [ ] CNAME record for www subdomain
+- [ ] SSL certificate requested and validated
+- [ ] Certificate attached to load balancer/app service
+- [ ] HTTP → HTTPS redirect configured
+- [ ] Security headers implemented
+- [ ] HTTPS tested in browser (green padlock visible)
+- [ ] SSL Labs score verified (A or higher)
+- [ ] Certificate renewal monitored/automated
+- [ ] Backup certificate renewal tested
+
+#### Cost Impact
+
+**AWS Route 53:**
+- Hosted Zone: $0.50/month
+- DNS queries: $0.40 per million queries
+- Typical small app: ~$0.50-1.50/month
+
+**AWS Certificate Manager:**
+- Public certificates: **FREE**
+- Private certificates: ~$400/month (not needed for public apps)
+
+**Azure DNS:**
+- Public zones: ~$0.50/month
+- DNS queries: Included
+
+**Total Monthly Cost:** $1-2 (negligible)
+
+**Value:**
+- User trust and confidence: Priceless 🔒
+- SEO ranking improvement: +5-10%
+- Security and compliance: Required
+- Professional appearance: Essential
+
+---
+
+
 
