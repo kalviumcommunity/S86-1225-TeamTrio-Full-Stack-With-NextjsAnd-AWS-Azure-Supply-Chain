@@ -1,6 +1,4 @@
-<<<<<<< HEAD
-export * from "../../app/lib/schemas/restaurantSchema";
-=======
+
 /**
  * Restaurant Schema for FoodONtracks
  * Zod validation schema for restaurant data
@@ -45,4 +43,4 @@ export const restaurantCreateSchema = restaurantSchema.extend({
 export type RestaurantInput = z.infer<typeof restaurantSchema>;
 export type RestaurantUpdateInput = z.infer<typeof restaurantUpdateSchema>;
 export type RestaurantCreateInput = z.infer<typeof restaurantCreateSchema>;
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44

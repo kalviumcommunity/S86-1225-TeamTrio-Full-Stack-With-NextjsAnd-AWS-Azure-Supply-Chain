@@ -37,12 +37,8 @@ export const POST = withLogging(async (req: Request) => {
  *
  * Alternative logout via GET (for simple links)
  */
-<<<<<<< HEAD
-export const GET = withLogging(async (req: Request) => {
-  return POST(req as any);
-});
-=======
+
 export async function GET() {
   return POST();
 }
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44

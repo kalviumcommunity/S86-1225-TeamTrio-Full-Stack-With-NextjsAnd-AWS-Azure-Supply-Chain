@@ -3,17 +3,14 @@ const path = require('path');
 
 const nextConfig = {
   reactStrictMode: true,
-<<<<<<< HEAD
   // Ensure Turbopack uses the project folder as root to resolve path aliases
   turbopack: {
     root: __dirname,
-=======
-  // swcMinify is now default in Next.js 16 and deprecated as config option
-  
+  },
+
   // HTTPS Redirect Configuration
   async redirects() {
     return [
-      // Force HTTPS redirect for all HTTP requests in production
       {
         source: '/:path*',
         has: [
@@ -26,7 +23,6 @@ const nextConfig = {
         destination: 'https://:host/:path*',
         permanent: true,
       },
-      // Redirect www to non-www (optional, configure based on your domain strategy)
       {
         source: '/:path*',
         has: [
@@ -47,7 +43,6 @@ const nextConfig = {
       {
         source: '/:path*',
         headers: [
-          // HTTPS Security Headers
           {
             key: 'Strict-Transport-Security',
             value: 'max-age=31536000; includeSubDomains; preload',
@@ -89,10 +84,7 @@ const nextConfig = {
       'foodontracks.local',
       'www.foodontracks.local',
       'api.foodontracks.local',
-      // Add your S3 bucket if using AWS
-      // 'your-bucket.s3.amazonaws.com',
     ],
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
   },
 };
 

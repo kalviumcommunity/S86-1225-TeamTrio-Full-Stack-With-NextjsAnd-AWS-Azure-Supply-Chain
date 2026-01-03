@@ -6,13 +6,10 @@ import { logger } from "@/lib/logger";
 import withLogging from "@/lib/requestLogger";
 
 // GET /api/orders/[id]
-<<<<<<< HEAD
-export const GET = withLogging(async (
-  req: NextRequest,
-=======
+
 export async function GET(
   _req: NextRequest,
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
   { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
@@ -102,12 +99,7 @@ export const PATCH = withLogging(async (
       const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
-<<<<<<< HEAD
-          ...(status ? { status } : {}),
-          ...(specialInstructions !== undefined ? { specialInstructions } : {}),
-          ...(deliveryPersonId !== undefined ? { deliveryPersonId } : {}),
-          ...(status === "DELIVERED" && !existingOrder.actualDeliveryTime ? { actualDeliveryTime: new Date() } : {}),
-=======
+
           ...(status && { status }),
           ...(specialInstructions !== undefined && { specialInstructions }),
           ...(deliveryPersonId !== undefined && {
@@ -119,7 +111,7 @@ export const PATCH = withLogging(async (
             !existingOrder.actualDeliveryTime && {
               actualDeliveryTime: new Date(),
             }),
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
         },
         include: {
           orderItems: {
@@ -239,19 +231,13 @@ export const PUT = withLogging(async (
       { status: 500 }
     );
   }
-<<<<<<< HEAD
-});
 
-// DELETE /api/orders/[id] - Cancel order
-export const DELETE = withLogging(async (
-  req: NextRequest,
-=======
 }
 
 // DELETE /api/orders/[id] - Cancel order
 export async function DELETE(
   _req: NextRequest,
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
   { params }: { params: Promise<{ id: string }> }
 ) => {
   try {

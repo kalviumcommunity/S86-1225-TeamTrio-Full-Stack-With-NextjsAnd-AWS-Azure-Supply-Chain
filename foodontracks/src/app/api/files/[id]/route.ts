@@ -1,34 +1,20 @@
-<<<<<<< HEAD
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/app/lib/prisma";
-import {
-  createSuccessResponse,
-  createErrorResponse,
-} from "@/app/lib/responseHandler";
-import { logger } from "@/lib/logger";
-import withLogging from "@/lib/requestLogger";
-=======
+
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSuccess, sendError } from "@/lib/responseHandler";
 import { ERROR_CODES } from "@/lib/errorCodes";
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
 
 /**
  * GET /api/files/[id]
  * Retrieves a single file by ID
  */
-<<<<<<< HEAD
-export const GET = withLogging(async (
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) => {
-=======
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
   try {
     const { id } = await params;
     const fileId = parseInt(id);
@@ -75,13 +61,10 @@ export async function GET(
  */
 export const PATCH = withLogging(async (
   req: NextRequest,
-<<<<<<< HEAD
-  { params }: { params: { id: string } }
-) => {
-=======
+
   { params }: { params: Promise<{ id: string }> }
 ) {
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
   try {
     const { id } = await params;
     const fileId = parseInt(id);
@@ -141,17 +124,12 @@ export const PATCH = withLogging(async (
  * Deletes a file by ID
  * Note: This only deletes the database record, not the actual file from S3
  */
-<<<<<<< HEAD
-export const DELETE = withLogging(async (
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) => {
-=======
+
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
   try {
     const { id } = await params;
     const fileId = parseInt(id);

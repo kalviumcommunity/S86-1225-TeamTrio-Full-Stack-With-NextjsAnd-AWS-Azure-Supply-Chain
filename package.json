@@ -13,6 +13,7 @@
     "db:reset": "npm --prefix ./foodontracks run db:reset"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.1",
     "husky": "^8.0.0"
   },
   "dependencies": {

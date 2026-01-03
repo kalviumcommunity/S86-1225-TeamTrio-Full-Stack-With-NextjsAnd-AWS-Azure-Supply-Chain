@@ -2,15 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSuccess, sendError } from "@/lib/responseHandler";
 import { ERROR_CODES } from "@/lib/errorCodes";
-<<<<<<< HEAD
-import { createRestaurantSchema } from "@/lib/schemas/restaurantSchema";
-import { validateData } from "@/lib/validationUtils";
-import { logger } from "@/lib/logger";
-import { withLogging } from "@/lib/requestLogger";
-=======
+
 import { restaurantCreateSchema } from "@/lib/schemas/restaurantSchema";
 import { validateData } from "@/lib/validationUtils";
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
 
 // GET /api/restaurants - Get all restaurants with pagination
 async function GET_handler(req: NextRequest) {

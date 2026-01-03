@@ -6,13 +6,10 @@ import { logger } from "@/lib/logger";
 import withLogging from "@/lib/requestLogger";
 
 // GET /api/delivery-persons/[id] - Get specific delivery person
-<<<<<<< HEAD
-export const GET = withLogging(async (
-  request: NextRequest,
-=======
+
 export async function GET(
   _request: NextRequest,
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
   { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
@@ -158,13 +155,10 @@ export const PUT = withLogging(async (
 });
 
 // DELETE /api/delivery-persons/[id] - Delete delivery person
-<<<<<<< HEAD
-export const DELETE = withLogging(async (
-  request: NextRequest,
-=======
+
 export async function DELETE(
   _request: NextRequest,
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
   { params }: { params: Promise<{ id: string }> }
 ) => {
   try {

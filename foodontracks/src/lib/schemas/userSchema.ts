@@ -1,6 +1,4 @@
-<<<<<<< HEAD
-export * from "../../app/lib/schemas/userSchema";
-=======
+
 /**
  * User Schema for FoodONtracks
  * Zod validation schema for user data
@@ -113,4 +111,4 @@ export type PasswordResetInput = z.infer<typeof passwordResetSchema>;
 export type PasswordResetConfirmInput = z.infer<
   typeof passwordResetConfirmSchema
 >;
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
