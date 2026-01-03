@@ -813,21 +813,61 @@ az webapp config container set --name foodontracks-app --resource-group foodontr
 
 ## 🧪 Testing
 
-### Database Connection
+### Overview
+
+Unit tests use Jest and React Testing Library (RTL). Tests live under `__tests__/` and the configuration is in `jest.config.js`.
+
+### Quickstart
+
+1. From the `foodontracks` folder, install dev dependencies:
+
+```bash
+npm install --save-dev jest ts-jest @types/jest jest-environment-jsdom @testing-library/react @testing-library/jest-dom @testing-library/user-event
+```
+
+2. Run tests:
+
+```bash
+npm test
+```
+
+3. Run with coverage:
+
+```bash
+npm run test:coverage
+```
+
+### Example tests added
+
+- `__tests__/sum.test.ts` — unit test for a small `sum` utility
+- `__tests__/Button.test.tsx` — RTL test for a simple `Button` component
+
+### CI Integration
+
+A GitHub Actions workflow `.github/workflows/test.yml` runs `npm ci` and `npm test -- --coverage` for automated validation on push and pull requests.
+
+### Notes
+
+- Coverage thresholds are configured at 80% globally in `jest.config.js`.
+- Tests are TypeScript-ready via the existing Next.js setup; run `npm ci` before running tests on CI.
+
+### Existing quick scripts (legacy)
+
+#### Database Connection
 
 ```powershell
 .\test-api.ps1
 .\test-db-connection.ps1
 ```
 
-### Authentication
+#### Authentication
 
 ```powershell
 .\test-jwt-auth.ps1
 .\test-error-handling.ps1
 ```
 
-### HTTPS & Security
+#### HTTPS & Security
 
 ```powershell
 .\verify-https-setup.ps1

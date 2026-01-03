@@ -6,13 +6,10 @@ import { logger } from "@/lib/logger";
 import withLogging from "@/lib/requestLogger";
 
 // GET /api/addresses/[id]
-<<<<<<< HEAD
-export const GET = withLogging(async (
-  req: NextRequest,
-=======
+
 export async function GET(
   _req: NextRequest,
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
   { params }: { params: Promise<{ id: string }> }
 ) => {
   let idStr: string | undefined = undefined;
@@ -98,13 +95,10 @@ export const PUT = withLogging(async (
 });
 
 // DELETE /api/addresses/[id]
-<<<<<<< HEAD
-export const DELETE = withLogging(async (
-  req: NextRequest,
-=======
+
 export async function DELETE(
   _req: NextRequest,
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
   { params }: { params: Promise<{ id: string }> }
 ) => {
   let idStr: string | undefined = undefined;

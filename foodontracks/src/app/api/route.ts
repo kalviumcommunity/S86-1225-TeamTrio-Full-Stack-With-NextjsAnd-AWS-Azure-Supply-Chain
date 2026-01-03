@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
-<<<<<<< HEAD
-import AWS from "aws-sdk";
-import withLogging from "@/lib/requestLogger";
-=======
+
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION,

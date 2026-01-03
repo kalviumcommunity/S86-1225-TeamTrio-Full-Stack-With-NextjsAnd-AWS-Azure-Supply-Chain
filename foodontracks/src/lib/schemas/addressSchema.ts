@@ -1,6 +1,4 @@
-<<<<<<< HEAD
-export * from "../../app/lib/schemas/addressSchema";
-=======
+
 /**
  * Address Schema for FoodONtracks
  * Zod validation schema for address data
@@ -27,4 +25,4 @@ export const addressCreateSchema = addressSchema.extend({
 export type AddressInput = z.infer<typeof addressSchema>;
 export type AddressUpdateInput = z.infer<typeof addressUpdateSchema>;
 export type AddressCreateInput = z.infer<typeof addressCreateSchema>;
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44

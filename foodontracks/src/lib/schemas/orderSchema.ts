@@ -1,6 +1,4 @@
-<<<<<<< HEAD
-export * from "../../app/lib/schemas/orderSchema";
-=======
+
 /**
  * Order Schema for FoodONtracks
  * Zod validation schema for order data
@@ -63,4 +61,4 @@ export type OrderInput = z.infer<typeof orderSchema>;
 export type OrderItemInput = z.infer<typeof orderItemSchema>;
 export type OrderUpdateInput = z.infer<typeof orderUpdateSchema>;
 export type OrderStatusUpdateInput = z.infer<typeof orderStatusUpdateSchema>;
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44

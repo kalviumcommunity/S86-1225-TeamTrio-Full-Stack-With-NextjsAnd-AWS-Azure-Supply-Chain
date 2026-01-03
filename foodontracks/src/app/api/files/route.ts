@@ -1,18 +1,9 @@
-<<<<<<< HEAD
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/app/lib/prisma";
-import {
-  createSuccessResponse,
-  createErrorResponse,
-} from "@/app/lib/responseHandler";
-import { logger } from "@/lib/logger";
-import withLogging from "@/lib/requestLogger";
-=======
+
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendSuccess, sendError } from "@/lib/responseHandler";
 import { ERROR_CODES } from "@/lib/errorCodes";
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
 
 /**
  * POST /api/files

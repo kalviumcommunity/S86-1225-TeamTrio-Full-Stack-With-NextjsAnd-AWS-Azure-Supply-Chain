@@ -1,6 +1,4 @@
-<<<<<<< HEAD
-export * from "../app/lib/responseHandler";
-=======
+
 /**
  * Standardized API Response Handlers for FoodONtracks
  * Provides consistent response formatting across all endpoints
@@ -141,4 +139,4 @@ export function sendValidationError(
 ): NextResponse<ErrorResponse> {
   return sendError(ERROR_CODES.VALIDATION_ERROR, message, details, 400);
 }
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44

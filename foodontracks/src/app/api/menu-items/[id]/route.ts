@@ -5,13 +5,10 @@ import withLogging from "@/lib/requestLogger";
 // Mock implementation for SWR demo
 
 // GET /api/menu-items/[id]
-<<<<<<< HEAD
-export const GET = withLogging(async (
-  req: NextRequest,
-=======
+
 export async function GET(
   _req: NextRequest,
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
   { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
@@ -121,13 +118,10 @@ export const PUT = withLogging(async (
 });
 
 // DELETE /api/menu-items/[id]
-<<<<<<< HEAD
-export const DELETE = withLogging(async (
-  req: NextRequest,
-=======
+
 export async function DELETE(
   _req: NextRequest,
->>>>>>> 9403793faf03c4376ebcdf0fc73728d4ea910a44
+ 9403793faf03c4376ebcdf0fc73728d4ea910a44
   { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
